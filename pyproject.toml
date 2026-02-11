@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "behavioural_sirs"
+version = "0.1.0"
+description = "Simulation library for thesis"
+dependencies = [
+    "numpy",
+    "matplotlib"
+]
+
+[tool.setuptools.packages.find]
+where = ["code"]
+include = ["core*"]
