@@ -8,7 +8,7 @@ The aim of this file is to provide the main simulation methods used in the thesi
 from core.utils import *
 from plotly.subplots import make_subplots
 
-class Simulations:
+class Simulations():
 
     def __init__(self, show_cumulative_incidence=False, save_figures=False, path_figures='figures'):
         self.show_cumulative_incidence = show_cumulative_incidence
@@ -891,32 +891,84 @@ class Simulations:
         return fig
 
 
+    def simulation_12_distance_between_ee(self, params, beta_range : list):
+        """
+        Simulation 12. of the thesis.
+        This method simulates the distance between the endemic equilibrium of the SIRS model with memory with and without the vital dynamics, as a function of β.
+        """
+        beta_start, beta_end = beta_range[0], beta_range[1]
+        beta_values = np.linspace(beta_start, beta_end, 1000)
+        R0_vital = beta_values / (params['mu'] + params['gamma'])
+        R0_no_vital = beta_values / params['gamma']
+
+        I_ee_with_vital = (R0_vital - 1) / (R0_vital * (1 + params['alpha'] * (R0_vital - 1)))
+        I_ee_without_vital = (R0_no_vital - 1) / (R0_no_vital * (1 + params['alpha'] * (R0_no_vital - 1)))
+
+        S_ee_with_vital = 1 / R0_vital
+        S_ee_without_vital = 1 / R0_no_vital
+
+        R_ee_with_vital = 1 - S_ee_with_vital - I_ee_with_vital
+        R_ee_without_vital = 1 - S_ee_without_vital - I_ee_without_vital
+
+        M_ee_with_vital = I_ee_with_vital
+        M_ee_without_vital = I_ee_without_vital
+
+
+        distance = np.sqrt((S_ee_with_vital - S_ee_without_vital)**2 + (I_ee_with_vital - I_ee_without_vital)**2 + (R_ee_with_vital - R_ee_without_vital)**2 + (M_ee_with_vital - M_ee_without_vital)**2)
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=beta_values, y=distance,
+                mode='lines',
+                name='Distance between endemic equilibria',
+                line=dict(color='red')
+            )
+        )
+
+        fig.update_layout(
+            title_text="Distance between endemic equilibria given β",
+            xaxis_title="β",
+            yaxis_title="Distance",
+            template='plotly_white',
+            width=1200, height=600,
+            legend_title="Distance between endemic equilibria"
+        )
+
+        fig.show()
+        return fig
 
 
 
-
-    def run_simulation(self, simulations, models, params, r0_theta_list=None, a_list: list | None = None, R0s=None, thetas=None, ks=None, deltas=None, alpha_range : list | None =None):
+    def run_simulation(self, simulations, models=None, params=None, 
+                       r0_theta_list=None, a_list=None, 
+                       R0s=None, thetas=None, ks=None, deltas=None, 
+                       alpha_range=None, beta_range=None):
+        
         simulation_dict = {
-            1: self.simulation_1_r0_and_theta(models=models,r0_theta_list=r0_theta_list, params=params),
-            2: self.simulation_2_memory(models=models, params=params),
-            3: self.simulation_3_r0_and_theta(models=models, params=params, r0_theta_list=r0_theta_list),
-            4: self.simulation_4_r0_and_theta_with_2_layers(models=models, params=params, R0s=R0s, thetas=thetas, a_list=a_list),
-            5: self.simulation_5_k(models=models, params=params, k=ks),
-            6: self.simulation_6_r0_and_theta_prevalence_vs_incidence(models=models, params=params, R0s=R0s, thetas=thetas),
-            7: self.simulation_7_a1_and_a2_prevalence_vs_incidence(models=models, params=params, a1s=a_list[0], a2s=a_list[1]),
-            8: self.simulation_8_k_prevalence_vs_incidence(models=models, params=params, ks=ks),
-            9: self.simulation_9_periodic(models=models, params=params, deltas=deltas),
-            10: self.simulation_10_a1_and_a2(models=models, params=params, a_list=a_list),
-            11: self.simulation_11_ie_given_alpha(params=params, alpha_range=alpha_range)
+            1: lambda: self.simulation_1_r0_and_theta(models=models, r0_theta_list=r0_theta_list, params=params),
+            2: lambda: self.simulation_2_memory(models=models, params=params),
+            3: lambda: self.simulation_3_r0_and_theta(models=models, params=params, r0_theta_list=r0_theta_list),
+            4: lambda: self.simulation_4_r0_and_theta_with_2_layers(models=models, params=params, R0s=R0s, thetas=thetas, a_list=a_list),
+            5: lambda: self.simulation_5_k(models=models, params=params, k=ks),
+            6: lambda: self.simulation_6_r0_and_theta_prevalence_vs_incidence(models=models, params=params, R0s=R0s, thetas=thetas),
+            7: lambda: self.simulation_7_a1_and_a2_prevalence_vs_incidence(models=models, params=params, a1s=a_list[0], a2s=a_list[1]),
+            8: lambda: self.simulation_8_k_prevalence_vs_incidence(models=models, params=params, ks=ks),
+            9: lambda: self.simulation_9_periodic(models=models, params=params, deltas=deltas),
+            10: lambda: self.simulation_10_a1_and_a2(models=models, params=params, a_list=a_list),
+            11: lambda: self.simulation_11_ie_given_alpha(params=params, alpha_range=alpha_range),
+            12: lambda: self.simulation_12_distance_between_ee(params=params, beta_range=beta_range)
         }
 
         for simulation_number in simulations:
-            fig = simulation_dict[simulation_number]
+            # FIX: Add () to actually run the function now
+            fig = simulation_dict[simulation_number]()
+            
             # Save the figure
-            if self.save_figures:
-                fig.write_image(f"simulation_{simulation_number}.png", scale=2)
+            if self.save_figures and fig is not None:
+                fig.write_image(f"./img/simulation_{simulation_number}.png", scale=2)
 
-        return 
+        return fig
 
 
 

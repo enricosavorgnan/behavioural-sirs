@@ -7,7 +7,7 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.integrate import solve_ivp
 
-from models import *
+from core.models import SIRSModels, SIRS
 
 """
 The aim of this file is to provide the utils methods used by simulations.py and in jupyter file 'simulations.ipynb' to study the different dynamics of several behavioural SIRS models.

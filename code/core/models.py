@@ -10,7 +10,7 @@ At the end of the file, two different methods to compute the β(M) parameter are
 import numpy as np
 from scipy.integrate import solve_ivp
 
-class SIRSModels:
+class SIRSModels():
     def __init__(self, model_type: str = 'sirs', 
                  beta: float | None = 0., 
                  gamma: float | None = 0., 
@@ -140,7 +140,7 @@ class SIRSModels:
         dM2 = self.a2 * (M1 - M2)
         return [dI, dR, dM1, dM2]
 
-class SIRS:
+class SIRS():
     def __init__(self, model_type: str = 'sirs', 
                  params: dict | None = None, 
                  beta: float | None = 0., 
@@ -201,7 +201,7 @@ class SIRS:
         return solution
     
 
-    def cumulative_incidence(self, solution : solve_ivp.OdeSolution | list, t_span : list):
+    def cumulative_incidence(self, solution, t_span : list):
         """
             Internal method to calculate the cumulative incidence from the solution of the ODEs.
 
