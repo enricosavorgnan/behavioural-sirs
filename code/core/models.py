@@ -115,6 +115,18 @@ class SIRSModels():
         dM2 = self.a2 * (M1 - M2)
         return [dI, dR, dM1, dM2]
 
+    def sirs_zero_layer_incidence(self, t, X):
+        I, R, M = X
+        beta_current = self.beta_func(M, t)
+
+        S = 1. - R - I
+        incidence = beta_current * S * I
+
+        dI = I * (beta_current * (1 - R - I) - (self.mu + self.gamma))
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        M = self.a1 * incidence
+        return [dI, dR, M]
+
     def sirs_one_layer_incidence(self, t, X):
         I, R, M = X
         beta_current = self.beta_func(M, t)

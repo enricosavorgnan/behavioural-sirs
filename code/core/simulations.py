@@ -5,7 +5,8 @@
 """
 The aim of this file is to provide the main simulation methods used in the thesis and in the jupyter file `simulations.ipynb`.
 """
-from core.utils import *
+from code.core.utils import *
+from code.core.models import *
 from plotly.subplots import make_subplots
 
 class Simulations():
@@ -939,11 +940,25 @@ class Simulations():
         return fig
 
 
+    def simulation_13_impact_r0(self, params, r0_list : list):
+        """
+        Simulation 13. of the thesis.
+        This method simulates the impact of R₀ on the infectious endemic equilibrium, for both the SIRS model with memory and the classic SIRS model without memory.
+        """
+        def calculate_I_ee(r0, x):
+            return 1/(q+1) * (1 - r0 * (np.sqrt(.25 + alpha * k * beta * x * (1 - (q+1) * x)) + .5))
+
+        for r0 in r0_list:
+            model =
+            print(calculate_I_ee(r0))
+
+
+
 
     def run_simulation(self, simulations, models=None, params=None, 
                        r0_theta_list=None, a_list=None, 
                        R0s=None, thetas=None, ks=None, deltas=None, 
-                       alpha_range=None, beta_range=None):
+                       alpha_range=None, beta_range=None, r0_list=None):
         
         simulation_dict = {
             1: lambda: self.simulation_1_r0_and_theta(models=models, r0_theta_list=r0_theta_list, params=params),
@@ -958,6 +973,7 @@ class Simulations():
             10: lambda: self.simulation_10_a1_and_a2(models=models, params=params, a_list=a_list),
             11: lambda: self.simulation_11_ie_given_alpha(params=params, alpha_range=alpha_range),
             12: lambda: self.simulation_12_distance_between_ee(params=params, beta_range=beta_range)
+            13: lambda: self.simulation_13_impact_r0(params=params, r0_list=r0_list)
         }
 
         for simulation_number in simulations:
