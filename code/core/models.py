@@ -58,7 +58,7 @@ class SIRSModels():
                 return beta_const
 
         # --- Case 2: Zero/One-Layer Models (Need M, t) ---
-        elif self.model_type in ['sirs_zero_layer', 'sirs_one_layer', 'sirs_one_layer_incidence']:
+        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence']:
             if self.delta != 0:
                 # Seasonal: Uses time 't'
                 def beta_seasonal(x, t):
@@ -116,16 +116,16 @@ class SIRSModels():
         return [dI, dR, dM1, dM2]
 
     def sirs_zero_layer_incidence(self, t, X):
-        I, R, M = X
-        beta_current = self.beta_func(M, t)
-
+        I, R = X
         S = 1. - R - I
+
+        M = (-1 + max(0, np.sqrt(1 + 4 * self.a1 * self.k * self.beta_val * I * S))) / (2*self.a1)
+        beta_current = self.beta_func(M, t)
         incidence = beta_current * S * I
 
-        dI = I * (beta_current * (1 - R - I) - (self.mu + self.gamma))
+        dI = incidence - I * (self.mu + self.gamma)
         dR = self.gamma * I - (self.mu + self.theta) * R
-        M = self.a1 * incidence
-        return [dI, dR, M]
+        return [dI, dR]
 
     def sirs_one_layer_incidence(self, t, X):
         I, R, M = X
@@ -208,8 +208,10 @@ class SIRS():
             - m2: float, optional
                 Initial condition for the second memory layer (if applicable).
         """
-        solution = solve_ivp(self.model, t_span, [i, r] + ([m1] if m1 is not None else []) + ([m2] if m2 is not None else []),
-                             args=(self.beta, self.gamma, self.mu, self.theta, self.a1, self.a2, self.k, self.delta, self.omega), dense_output=True)
+        # solution = solve_ivp(self.model, t_span, [i, r] + ([m1] if m1 is not None else []) + ([m2] if m2 is not None else []),
+        #                     args=(self.beta, self.gamma, self.mu, self.theta, self.a1, self.a2, self.k, self.delta, self.omega), dense_output=True)
+
+        solution = solve_ivp(self.model, t_span, [i, r] + ([m1] if m1 is not None else []) + ([m2] if m2 is not None else []), dense_output=True)
         return solution
     
 
@@ -260,9 +262,13 @@ class SIRS():
             - initial_conditions: list
                 List of initial conditions for the model variables.
         """
-        assert len(initial_conditions)==2 if self.model_type == 'sirs' else None
-        assert len(initial_conditions)==3 if self.model_type in ['sirs_zero_layer', 'sirs_one_layer', 'sirs_one_layer_incidence'] else None
-        assert len(initial_conditions)==4 if self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence'] else None
+        print(initial_conditions, len(initial_conditions), self.model_type)
+        if self.model_type in ['sirs', 'sirs_zero_layer_incidence']:
+            assert len(initial_conditions) == 2, "Expected 2 initial conditions for this model."
+        elif self.model_type in ['sirs_zero_layer', 'sirs_one_layer', 'sirs_one_layer_incidence']:
+            assert len(initial_conditions) == 3, "Expected 3 initial conditions for this model."
+        elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence']:
+            assert len(initial_conditions) == 4, "Expected 4 initial conditions for this model."
 
         t = np.linspace(t_span[0], t_span[1], 20000)
 
@@ -270,6 +276,7 @@ class SIRS():
         m1 = initial_conditions[2] if len(initial_conditions) == 3 else None
         m2 = initial_conditions[3] if len(initial_conditions) == 4 else None
 
+        print(m1, m2)
         solution = self._solve_odes(t, t_span, i, r, m1, m2)
         return solution.sol(t)
 

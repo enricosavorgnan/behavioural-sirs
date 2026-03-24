@@ -945,12 +945,28 @@ class Simulations():
         Simulation 13. of the thesis.
         This method simulates the impact of R₀ on the infectious endemic equilibrium, for both the SIRS model with memory and the classic SIRS model without memory.
         """
-        def calculate_I_ee(r0, x):
-            return 1/(q+1) * (1 - r0 * (np.sqrt(.25 + alpha * k * beta * x * (1 - (q+1) * x)) + .5))
+        def calculate_I_ee(r0, x, params):
+            q = params['gamma'] / (params['mu'] + params['theta'])
+            return 1/(q+1) * (1 - 1 / r0 * (np.sqrt(.25 + alpha * k * params['beta'] * x * (1 - (q+1) * x)) + .5))
 
         for r0 in r0_list:
-            model =
-            print(calculate_I_ee(r0))
+            params['beta'] = r0 * (params['mu'] + params['gamma'])
+
+            # Note: Only pass [I_0, R_0]
+            sim_engine = SIRS(model_type='sirs_zero_layer_incidence', params=params)
+            sol = sim_engine.simulate(t_span=params['t_span'], initial_conditions=[0.01, 0.0])
+
+            I = sol[0]
+            R = sol[1]
+            S = 1 - I - R
+
+            # Reconstruct M for analysis/plotting
+            alpha = params['a1']
+            beta_val = params['beta']
+            k = params['k']
+            q = params['gamma'] / (params['mu'] + params['theta'])
+
+            print("R₀:", r0, "I_ee:", calculate_I_ee(r0, I[-1], params), "I_ee_approx:", 1/(q+1) * (1 - (1 / 2/ r0))  )
 
 
 
@@ -972,7 +988,7 @@ class Simulations():
             9: lambda: self.simulation_9_periodic(models=models, params=params, deltas=deltas),
             10: lambda: self.simulation_10_a1_and_a2(models=models, params=params, a_list=a_list),
             11: lambda: self.simulation_11_ie_given_alpha(params=params, alpha_range=alpha_range),
-            12: lambda: self.simulation_12_distance_between_ee(params=params, beta_range=beta_range)
+            12: lambda: self.simulation_12_distance_between_ee(params=params, beta_range=beta_range),
             13: lambda: self.simulation_13_impact_r0(params=params, r0_list=r0_list)
         }
 
