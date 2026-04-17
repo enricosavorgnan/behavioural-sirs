@@ -9,7 +9,7 @@ from code.core.utils import *
 from code.core.models import *
 from plotly.subplots import make_subplots
 
-class Simulations():
+class Simulations:
 
     def __init__(self, show_cumulative_incidence=False, save_figures=False, path_figures='figures'):
         self.show_cumulative_incidence = show_cumulative_incidence

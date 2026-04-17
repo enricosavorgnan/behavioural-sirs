@@ -198,7 +198,7 @@ class Plots:
 
         if self.save_figures:
             filename = f"memory_compartments.png"
-            save_figure(fig, self.path_figures, filename)
+            self.save_figure(fig, self.path_figures)
 
         return fig
     
@@ -234,6 +234,23 @@ def simulate(model, params):
     R0 = 0
     M0 = 0
 
+    # if model is a string, get the corresponding function
+    if isinstance(model, str):
+        if model == 'sirs':
+            model = sirs
+        elif model == 'sirs_one_layer':
+            model = sirs_one_layer
+        elif model == 'sirs_two_layer':
+            model = sirs_two_layer
+        elif model == 'sirs_zero_layer':
+            model = sirs_zero_layer
+        elif model == 'sirs_one_layer_incidence':
+            model = sirs_one_layer_incidence
+        elif model == 'sirs_two_layer_incidence':
+            model = sirs_two_layer_incidence
+        else:
+            raise ValueError("Unknown model type. Please provide a valid SIRS model.")
+
     # Choose the model, set initial conditions accordingly, and solve the ODEs
     if model == sirs_zero_layer or model == sirs_one_layer or model == sirs_one_layer_incidence:
         # These models required one-layer memory
@@ -241,6 +258,9 @@ def simulate(model, params):
         if delta == 0 or None:
             beta_one = beta_one_layer(beta_0, k)
             sol = solve_ivp(model, t_span, X0, args=(beta_one, gamma, mu, theta, a1), dense_output=True)
+            Me = sol.sol(t)[-1][2]
+            print(f'β(Me): {beta_one(Me)}\tMe: {Me}\tEq:{2*mu + gamma + theta}')
+            print(f'\n\nIe:{sol.sol(t)[0][-1]}, Eq:{(beta_one(Me) - (2*mu + gamma + theta)) / beta_one(Me) / (gamma / (mu+ theta) + 2)}')
         else:
             beta_one = beta_one_layer_seasonal(beta_0, k, delta, omega)
             sol = solve_ivp(model, t_span, X0, args=(beta_one, gamma, mu, theta, a1, k, delta), dense_output=True)

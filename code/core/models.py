@@ -10,21 +10,20 @@ At the end of the file, two different methods to compute the β(M) parameter are
 import numpy as np
 from scipy.integrate import solve_ivp
 
-class SIRSModels():
+class SIRSModels:
     def __init__(self, model_type: str = 'sirs', 
-                 beta: float | None = 0., 
-                 gamma: float | None = 0., 
-                 mu: float | None = 0., 
-                 theta: float | None = 0., 
-                 a1: float | None = 0., 
-                 a2: float | None = 0., 
-                 k: float | None = 1, 
-                 delta: float | None = 0.,
-                 omega: float | None = 2 * np.pi / 365):
+                 beta: float  = 0.,
+                 gamma: float = 0.,
+                 mu: float = 0.,
+                 theta: float = 0.,
+                 a1: float = 0.,
+                 a2: float = 0.,
+                 k: float = 1,
+                 delta: float = 0.,
+                 omega: float = 2 * np.pi / 365):
         
         self.model_type = model_type
-        # RENAME: Store the float value as beta_val to avoid naming conflicts
-        self.beta_val = beta 
+        self.beta_val = beta
         self.gamma = gamma
         self.mu = mu
         self.theta = theta
@@ -33,9 +32,7 @@ class SIRSModels():
         self.k = k
         self.delta = delta
         self.omega = omega
-        
-        # PRE-CALCULATE: Instantiate the correct beta function immediately.
-        # This function will always be callable as func(x, t) or func(x, y, t).
+
         self.beta_func = self._get_beta_function()
 
     def _get_beta_function(self):
@@ -57,8 +54,9 @@ class SIRSModels():
                     return self.beta_val / ((1 + self.k * x) * (1 + self.k * y))
                 return beta_const
 
+
         # --- Case 2: Zero/One-Layer Models (Need M, t) ---
-        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence']:
+        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_one_memory', 'sirs_two_layer_incidence_one_memory']:
             if self.delta != 0:
                 # Seasonal: Uses time 't'
                 def beta_seasonal(x, t):
@@ -152,7 +150,34 @@ class SIRSModels():
         dM2 = self.a2 * (M1 - M2)
         return [dI, dR, dM1, dM2]
 
-class SIRS():
+    def sirs_two_layer_one_memory(self, t, X):
+        I, R, M1, M2 = X
+        beta_current = self.beta_func(M2, t)
+
+        S = 1. - R - I
+        incidence = beta_current * S * I
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        return [dI, dR, dM1, dM2]
+
+    def sirs_two_layer_incidence_one_memory(self, t, X):
+        I, R, M1, M2 = X
+        beta_current = self.beta_func(M2, t)
+
+        S = 1. - R - I
+        incidence = beta_current * S * I
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        return [dI, dR, dM1, dM2]
+
+
+class SIRS:
     def __init__(self, model_type: str = 'sirs', 
                  params: dict | None = None, 
                  beta: float | None = 0., 
@@ -235,8 +260,8 @@ class SIRS():
         S = 1 - I - R
         M1 = solution[2] if len(solution) > 2 else None
         M2 = solution[3] if len(solution) > 3 else None
-        beta_1 = self._physics.beta_one_layer(self.beta, self.k)
-        beta_2 = self._physics.beta_two_layer(self.beta, self.k, self.k)
+        beta_1 = self._physics.beta_func(self.beta, self.k)
+        beta_2 = self._physics.beta_func(self.beta, self.k, self.k)
 
         if M1 is not None and M2 is not None:
             incidence = [beta_2(m1, m2) * (1 - r - i) * i for i, r, m1, m2 in zip(I, R, M1, M2)]
@@ -317,14 +342,14 @@ def sirs_zero_layer(t, X, beta_1, gamma, mu, theta, a=0, k=1, delta=0):
     return [dI, dR, dM]
 
 
-def sirs_one_layer(t, X, beta_1, gamma, mu, theta, a, k=1, delta=0.0001):
+def sirs_one_layer(t, X, beta_1, gamma, mu, theta, a, k=1, delta=0.):
     """
     SIRS model with one layer of memory.
-    Parameter 'k' is nopt used but kept for compatibility with other models.
+    Parameter 'k' is not used but kept for compatibility with other models.
     """
     I, R, M = X
 
-    if delta != 0:
+    if delta != 0.:
         # If seasonal forcing is present, pass time 't' to beta_1
         beta_1_func = beta_1(M, t)
     else:
@@ -359,7 +384,7 @@ def sirs_two_layer(t, X, beta_2, gamma, mu, theta, a1, a2, k=1, delta=0):
     return [dI, dR, dM1, dM2]
 
 
-def sirs_one_layer_incidence(t, X, beta_1, gamma, mu, theta, a1, a2=0, k=1, delta=0.001):
+def sirs_one_layer_incidence(t, X, beta_1, gamma, mu, theta, a1, a2=0, k=1, delta=0.0):
     """
     SIRS model with one, incidence-based, layer of memory.
     """
@@ -367,6 +392,7 @@ def sirs_one_layer_incidence(t, X, beta_1, gamma, mu, theta, a1, a2=0, k=1, delt
 
     if delta != 0:
         # If seasonal forcing is present, pass time 't' to beta_1
+        print(delta)
         beta_1_func = beta_1(M, t)
     else:
         beta_1_func = beta_1(M)
