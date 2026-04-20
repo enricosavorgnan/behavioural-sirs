@@ -1,0 +1,39 @@
+# Configuration File for SIMULATION 1
+
+simulation_n : 5
+simulation_name : "Simulation 5: R₀, θ, Model types"
+
+
+
+# Model parameters
+
+model_type: ['sirs', 'sirs_two_layer', 'sirs_one_layer', 'sirs_zero_layer']
+
+r0 : [1.05, 2, 5, 18]
+theta : [!expr 1/3650, !expr 1/365, !expr 1/180, !expr 1/30]
+
+mu : !expr 1/365/80
+gamma : !expr 1/14
+a1 : !expr 1/15
+a2 : !expr 1/90
+k1 : 1.
+k2 : 1
+alpha1 : 100.
+alpha2 : 100.
+
+delta : 0.
+omega : 0.
+
+t_span : [0, 10000]
+initial_conditions : [0.01, 0., 0., 0.]
+
+
+
+# Plotting parameters
+
+show_cumulative_incidence : False
+show_params : False
+show_title : False
+
+plot_together : False
+plot_t_span : [0, 1000]

@@ -1,0 +1,39 @@
+# Configuration File for SIMULATION 6
+
+simulation_n : 6
+simulation_name : "Simulation 6: a1, a2"
+
+
+
+# Model parameters
+
+model_type: 'sirs_two_layer'
+
+r0 : 5
+theta : !expr 1/180
+
+mu : !expr 1/365/80
+gamma : !expr 1/7
+a1 : [!expr 1/15, !expr 1/30, !expr 90, !expr 180]
+a2 : [!expr 1/30, !expr 1/90, !expr 180, !expr 365]
+k1 : 1.
+k2 : 1.
+alpha1 : 10
+alpha2 : 10
+
+delta : 0.
+omega : 0.
+
+t_span : [0, 5000]
+initial_conditions : [0.01, 0., 0., 0.]
+
+
+
+# Plotting parameters
+
+show_cumulative_incidence : False
+show_params : False
+show_title : False
+
+plot_together : True
+plot_t_span : [0, 1000]
