@@ -1,1 +1,38 @@
 # Configuration File for SIMULATION 1
+
+simulation_n : 1
+simulation_name : "Simulation 1: R₀, θ"
+
+
+
+# Model parameters
+
+model_type: 'sirs'
+
+r0 : [1.1, 2.5, 5, 10]
+theta : [!expr 1/30, !expr 1/60, !expr 1/90, !expr 1/365]
+
+mu : !expr 1/365/80
+gamma : !expr 1/14
+a1 : 1.
+a2 : 1.
+k1 : 1.
+k2 : 1.
+alpha1 : 1.
+alpha2 : 1.
+
+delta : 0.
+omega : 0.
+
+t_span : [0, 10000]
+initial_conditions : [0.001, 0.]
+
+
+
+# Plotting parameters
+
+show_cumulative_incidence : False
+show_params : False
+show_title : False
+
+plot_together : False

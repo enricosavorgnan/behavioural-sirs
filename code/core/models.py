@@ -8,6 +8,7 @@ Class method building utilities for simulating Behavioral SIRS models
 
 import numpy as np
 import yaml
+from code.core.utils import expr
 from scipy.integrate import solve_ivp
 
 from code.core.sirs_models import SIRSModels
@@ -66,6 +67,14 @@ class SIRS:
         self.delta : float = model_params.get('delta', 0)
         self.omega : float = model_params.get('omega', 2 * np.pi / 365)
 
+        # set values to float
+        for k, v in vars(self).items():
+            try:
+                v = float(v)
+                setattr(self, k, v)
+            except (TypeError, ValueError):
+                pass
+
 
     def _set_params_with_yaml(self, config_path: str):
         with open(config_path, 'r') as f:
@@ -75,6 +84,7 @@ class SIRS:
         self.r0 : float  = config.get('r0', 0.)
         self.mu : float = config.get('mu', 0.)
         self.gamma : float = config.get('gamma', 0.)
+        print(f'gamma: {self.gamma}')
         self.theta : float = config.get('theta', 0.)
         self.a1 : float = config.get('a1', 0.)
         self.a2 : float = config.get('a2', 0.)
@@ -84,6 +94,14 @@ class SIRS:
         self.alpha2 : float = config.get('alpha2', 1.)
         self.delta : float = config.get('delta', 0)
         self.omega : float = config.get('omega', 2 * np.pi / 365)
+
+        # set values to float
+        for k, v in vars(self).items():
+            try:
+                v = float(v)
+                setattr(self, k, v)
+            except (TypeError, ValueError):
+                pass
 
 
     def _override_params(self, **kwargs):
@@ -160,7 +178,8 @@ class SIRS:
         return cumulative_incidence
 
 
-    def simulate(self, t_span: list, initial_conditions: list):
+    def \
+            simulate(self, t_span: list, initial_conditions: list):
         """
         Simulate the SIRS model over the given time span and initial conditions.
 
