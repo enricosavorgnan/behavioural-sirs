@@ -21,3 +21,4 @@ sympy==1.14.0
 thread==2.0.6
 urllib3_secure_extra==0.1.0
 pyyaml
+matplotlib

@@ -1,0 +1,198 @@
+# Enrico Savorgnan
+# University of Trieste, Italy, 2025
+# A new model in “Behavioral Epidemiology of Infectious Diseases”: SIRS model with social distancing
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from code.core.old.models import *
+
+"""
+The aim of this file is to provide the utils methods used by simulations.py and in jupyter file 'simulations.ipynb' to study the different dynamics of several behavioural SIRS models.
+"""
+
+
+class Plots:
+    """
+    This class provides methods to plot the results of the simulations.
+    """
+
+    def __init__(self,
+                 show_cumulative_incidence : bool = False,
+                 show_params : bool = False,
+                 show_title : bool = False,
+                 save_figures : bool = False,
+                 ):
+
+        self.show_cumulative_incidence = show_cumulative_incidence
+        self.show_params = show_params
+        self.show_title = show_title
+        self.save_figures = save_figures
+
+
+    def _manage_plot_settings(self, fig : plt.Figure, solution : list[np.ndarray] | np.ndarray, t_span : list[float | int], **kwargs):
+        """
+        Add fancy stuff to plots.
+
+        Parameters
+        ----------
+        fig : plt.Figure
+            The figure to be modified.
+        solution : list[np.ndarray] | np.ndarray
+            Array or list of array containing dynamics of a class during time.
+            All the series in the parameter will be plotted.
+        t_span : list[float | int]
+            List containing the start and end time of the simulation.
+            Used for plotting the x-axis.
+        **kwargs
+            Additional parameters to be used for plotting many details.
+            - model : SIRS | None, default None
+                An instance of the SIRS model.
+                Used for plotting title and model parameters
+            - title : str
+                The title of the plot.
+                Must be provided if show_title is set to True
+            - xlabel : str
+                What to print into xlabel ticks
+            - ylabel  :str
+                What to print into ylabel ticks
+            - image_path : str
+                image_path where to store the image.
+                Must be provided if save_figures is set to True
+        """
+        ax = fig.gca()
+
+        if self.show_title:
+            ax.set_title(kwargs['title'] if 'title' in kwargs else 'SIRS model simulation')
+
+        if self.show_params:
+            # print params as subtitle
+            model = kwargs['model'] if 'model' in kwargs else None
+            if model is not None:
+                R0 = round(model.r0, 3) if hasattr(model, 'r0') else None
+                theta = round(model.theta, 3) if hasattr(model, 'theta') else None
+                mu = round(model.mu, 3) if hasattr(model, 'mu') else None
+                gamma = round(model.gamma, 3) if hasattr(model, 'gamma') else None
+                a1 = round(model.a1, 3) if hasattr(model, 'a1') else None
+                a2 = round(model.a2, 3) if hasattr(model, 'a2') else None
+                k1 = round(model.k1, 3) if hasattr(model, 'k1') else None
+                k2 = round(model.k2, 3) if hasattr(model, 'k2') else None
+                delta = round(model.delta, 3) if hasattr(model, 'delta') else None
+                omega = round(model.omega, 3) if hasattr(model, 'omega') else None
+
+                params_text = f"Parameters: R₀={R0}, θ={theta}"
+                if mu is not None:
+                    params_text += f", mu={mu}"
+                if gamma is not None:
+                    params_text += f", k={gamma}"
+                if a1 is not None:
+                    params_text += f", a1={a1}"
+                if a2 is not None:
+                    params_text += f", a2={a2}"
+                if k1 is not None:
+                    params_text += f", k={k1}"
+                if k2 is not None:
+                    params_text += f", k={k2}"
+                if delta is not None:
+                    params_text += f", k={delta}"
+                if omega is not None:
+                    params_text += f", k={omega}"
+
+                ax.text(0.5, -0.15, params_text, ha='center', va='center', transform=ax.transAxes)
+
+        if self.save_figures:
+            plt.savefig(kwargs.get('image_path', './img/img1.png'), dpi=450, format='png')
+
+        if self.show_cumulative_incidence:
+            model = kwargs['model'] if 'model' in kwargs else None
+            if isinstance(model, SIRS):
+                ci = model.cumulative_incidence(solution, t_span)
+                ax.text(0.5, -0.25, f"Cumulative incidence: {ci:.4f}", ha='center', va='center', transform=ax.transAxes)
+
+        return
+
+
+    def plot_simulation(self, solution : list[np.ndarray] | np.ndarray, t_span : list[float | int], **kwargs) -> plt.Figure:
+        """
+        Plot the results of a single simulation of a SIRS model.
+
+        Parameters
+        ----------
+        solution : list[np.ndarray] | np.ndarray
+            Array or list of array containing dynamics of a class during time.
+            All the series in the parameter will be plotted.
+        t_span : list[float | int]
+            List containing the start and end time of the simulation.
+            Used for plotting the x-axis.
+        **kwargs
+            Additional parameters to be used for plotting many details.
+            See self._manage_plot_settings for more details
+        """
+        t = np.linspace(t_span[0], t_span[1], 20000)
+
+        plt.rcParams['text.usetex'] = True
+        plt.figure(figsize=(8, 5))
+        plt.xlabel(r'$t$')
+        plt.ylabel(r'$f(t)$')
+        plt.ylim(-0.05, 1.05)
+        plt.grid(linestyle='dotted')
+        plt.tight_layout()
+
+        for ts in solution:
+            plt.plot(t, ts)
+
+        self._manage_plot_settings(plt.gcf(), solution, t_span, **kwargs)
+        return plt.gcf()
+
+
+    def plot_simulations(self, solutions: list, t_span: list[float | int], **kwargs) -> plt.Figure:
+        """
+        Plot results from multiple SIRS model simulations on the same axes.
+        Follows the structure of self.plot_simulation.
+
+        Parameters
+        ----------
+        solutions : list
+            List of solutions. Each element should be the output of a model simulation.
+        t_span : list[float | int]
+            Start and end time for the x-axis.
+        **kwargs
+            Additional parameters.
+            Note: 'model' in kwargs will be used by _manage_plot_settings for param text.
+        """
+        t = np.linspace(t_span[0], t_span[1], 20000)
+
+        plt.rcParams['text.usetex'] = True
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.set_xlabel(r'$t$')
+        ax.set_ylabel(r'$f(t)$')
+        ax.set_ylim(-0.05, 1.05)
+        ax.grid(linestyle='dotted')
+
+        # Iterate through model-solution pairs to allow for specific labeling
+        for sol in solutions:
+            # Assume sol is a list of trajectories (S, I, R, etc.)
+            for i, ts in enumerate(sol):
+                ax.plot(t, ts)
+
+        ax.legend()
+        plt.tight_layout()
+
+        self._manage_plot_settings(fig, solutions[0], t_span, **kwargs)
+
+        return fig
+
+
+    def plot_memory(self, solutions, t_span, **kwargs) -> plt.Figure:
+        """
+        Specific wrapper that prepares memory-specific labels/styles
+        before calling the general plotting logic.
+        """
+        # Define specific styles for memory vs infectious
+        kwargs.setdefault('title', 'Memory Compartment Analysis')
+
+        # Pass only I, M1, M2
+        memory_solutions = [sol[[0, 2, 3]] for sol in solutions]
+
+        return self.plot_simulations(memory_solutions, t_span, **kwargs)
