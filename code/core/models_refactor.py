@@ -3,51 +3,93 @@
 # A new model in “Behavioral Epidemiology of Infectious Diseases”: SIRS model with social distancing
 
 """
-Several versions of Behavioural SIRS
+Class method building utilities for simulating Behavioral SIRS models
 """
+
 import numpy as np
+import yaml
 from scipy.integrate import solve_ivp
+
+from code.core.sirs_models import SIRSModels
 
 
 class SIRS:
-    def __init__(self, model_type: str = 'sirs',
-                 params: dict | None = None,
-                 beta: float | None = 0.,
-                 gamma: float | None = 0.,
-                 mu: float | None = 0.0,
-                 theta: float | None = 0.,
-                 a1: float | None = 0.,
-                 a2: float | None = 0,
-                 k: float | None = 1,
-                 delta: float | None = 0,
-                 omega: float | None = 2 * np.pi / 365):
+    """
+    SIRS Models
+    """
+    def __init__(self,
+                 model_params: dict | None = None,
+                 config_path : str | None = None):
 
-        self.model_type = model_type
+        assert model_params is not None or config_path is not None, \
+            f"One between model_params dictionary and config_path YAML file must be not None"
 
-        self.beta = beta if params is None else params.get('beta', beta)
-        self.gamma = gamma if params is None else params.get('gamma', gamma)
-        self.mu = mu if params is None else params.get('mu', mu)
-        self.theta = theta if params is None else params.get('theta', theta)
-        self.a1 = a1 if params is None else params.get('a1', a1)
-        self.a2 = a2 if params is None else params.get('a2', a2)
-        self.k = k if params is None else params.get('k', k)
-        self.delta = delta if params is None else params.get('delta', delta)
-        self.omega = omega if params is None else params.get('omega', omega)
+        if model_params is not None:
+            self._set_params_with_dict(model_params = model_params)
+        elif config_path is not None:
+            self._set_params_with_yaml(config_path = config_path)
 
-        # 1. Initialize the physics engine
         self._physics = SIRSModels(
-            model_type=model_type, beta=self.beta, gamma=self.gamma, mu=self.mu, theta=self.theta,
-            a1=self.a1, a2=self.a2, k=self.k, delta=self.delta, omega=self.omega
-        )
+            model_type=self.model_type,
+            r0=self.r0,
+            gamma=self.gamma,
+            mu=self.mu,
+            theta=self.theta,
+            a1=self.a1,
+            a2=self.a2,
+            k1=self.k1,
+            k2 = self.k2,
+            alpha1 = self.alpha1,
+            alpha2 = self.alpha2,
+            delta=self.delta,
+            omega=self.omega )
 
-        # 2. Bind the correct model method
-        if hasattr(self._physics, model_type):
-            self.model = getattr(self._physics, model_type)
-        else:
-            raise ValueError(f"Unknown model type: {model_type}")
+        self.model = getattr(self._physics, self.model_type)
 
 
-    def _solve_odes(self, t, t_span, i, r, m1=None, m2=None):
+    def _set_params_with_dict(self, model_params: dict):
+        self.model_type : str = model_params.get('model_type', 'sirs')
+        self.r0 : float  = model_params.get('r0', 0.)
+        self.mu : float = model_params.get('mu', 0.)
+        self.gamma : float = model_params.get('gamma', 0.)
+        self.theta : float = model_params.get('theta', 0.)
+        self.a1 : float = model_params.get('a1', 0.)
+        self.a2 : float = model_params.get('a2', 0.)
+        self.k1 : float = model_params.get('k1', 1.)
+        self.k2 : float = model_params.get('k2', 1.)
+        self.alpha1 : float = model_params.get('alpha1', 1.)
+        self.alpha2 : float = model_params.get('alpha2', 1.)
+        self.delta : float = model_params.get('delta', 0)
+        self.omega : float = model_params.get('omega', 2 * np.pi / 365)
+
+
+    def _set_params_with_yaml(self, config_path: str):
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+
+        self.model_type : str = config.get('type', 'sirs')
+        self.r0 : float  = config.get('r0', 0.)
+        self.mu : float = config.get('mu', 0.)
+        self.gamma : float = config.get('gamma', 0.)
+        self.theta : float = config.get('theta', 0.)
+        self.a1 : float = config.get('a1', 0.)
+        self.a2 : float = config.get('a2', 0.)
+        self.k1 : float = config.get('k1', 1.)
+        self.k2 : float = config.get('k2', 1.)
+        self.alpha1 : float = config.get('alpha1', 1.)
+        self.alpha2 : float = config.get('alpha2', 1.)
+        self.delta : float = config.get('delta', 0)
+        self.omega : float = config.get('omega', 2 * np.pi / 365)
+
+
+    def _solve_odes(self,
+                    t : list | np.ndarray,
+                    t_span : list[float | int],
+                    i : float,
+                    r : float,
+                    m1 : float | None = None,
+                    m2 : float | None = None,
+                    method : str = 'RK45'):
         """
             Internal method to solve the ODEs based on the model type and parameters.
 
@@ -65,42 +107,40 @@ class SIRS:
             - m2: float, optional
                 Initial condition for the second memory layer (if applicable).
         """
-        # solution = solve_ivp(self.model, t_span, [i, r] + ([m1] if m1 is not None else []) + ([m2] if m2 is not None else []),
-        #                     args=(self.beta, self.gamma, self.mu, self.theta, self.a1, self.a2, self.k, self.delta, self.omega), dense_output=True)
-
-        solution = solve_ivp(self.model, t_span, [i, r] + ([m1] if m1 is not None else []) + ([m2] if m2 is not None else []), dense_output=True)
+        variables = [i, r] + ( [m1] if m1 is not None else [] ) + ( [m2] if m2 is not None else [] )
+        solution = solve_ivp(self.model, t_span, variables, dense_output=True, method=method)
         return solution
 
 
-    def cumulative_incidence(self, solution, t_span : list):
+    def cumulative_incidence(self, solution, t_span : list [float | int]):
         """
-            Internal method to calculate the cumulative incidence from the solution of the ODEs.
+        Internal method to calculate the cumulative incidence from the solution of the ODEs.
 
-            Parameters:
-            - solution: OdeSolution
-                The solution object returned by solve_ivp.
-            - t_span: list
-                List of two elements [t_start, t_end] defining the time span for the simulation.
+        Parameters
+        ----------
+        solution: OdeSolution
+            The solution object returned by solve_ivp.
+        t_span: list
+            List of two elements [t_start, t_end] defining the time span for the simulation.
 
-            Returns:
-            - cumulative_incidence: array
-                Array of cumulative incidence values corresponding to the time points in the solution.
+        Returns
+        -------
+        cumulative_incidence: array
+            Array of cumulative incidence values corresponding to the time points in the solution.
         """
         t = np.linspace(t_span[0], t_span[1], 20000)
         I = solution[0]
         R = solution[1]
-        S = 1 - I - R
+
         M1 = solution[2] if len(solution) > 2 else None
         M2 = solution[3] if len(solution) > 3 else None
-        beta_1 = self._physics.beta_func(self.beta, self.k)
-        beta_2 = self._physics.beta_func(self.beta, self.k, self.k)
 
         if M1 is not None and M2 is not None:
-            incidence = [beta_2(m1, m2) * (1 - r - i) * i for i, r, m1, m2 in zip(I, R, M1, M2)]
+            incidence = [self._physics.beta(0, m1, m2) * (1 - r - i) * i for i, r, m1, m2 in zip(I, R, M1, M2)]
         elif M1 is not None:
-            incidence = [beta_1(m1) * (1 - r - i) * i for i, r, m1 in zip(I, R, M1)]
+            incidence = [self._physics.beta(0, m1) * (1 - r - i) * i for i, r, m1 in zip(I, R, M1)]
         else:
-            incidence = [self.beta * (1 - r - i) * i for i, r in zip(I, R)]
+            incidence = [self._physics.beta(None) * (1 - r - i) * i for i, r in zip(I, R)]
 
         # Integrating the incidence over time to get cumulative incidence, using the trapezoidal rule
         cumulative_incidence = np.trapezoid(incidence, t)
@@ -108,23 +148,22 @@ class SIRS:
         return cumulative_incidence
 
 
-
     def simulate(self, t_span: list, initial_conditions: list):
         """
-            Simulate the SIRS model over the given time span and initial conditions.
+        Simulate the SIRS model over the given time span and initial conditions.
 
-            Parameters:
-            - t_span: list
-                List of two elements [t_start, t_end] defining the time span for the simulation.
-            - initial_conditions: list
-                List of initial conditions for the model variables.
+        Parameters
+        ----------
+        t_span: list
+            List of two elements [t_start, t_end] defining the time span for the simulation.
+        initial_conditions: list
+            List of initial conditions for the model variables.
         """
-        print(initial_conditions, len(initial_conditions), self.model_type)
         if self.model_type in ['sirs', 'sirs_zero_layer_incidence']:
             assert len(initial_conditions) == 2, "Expected 2 initial conditions for this model."
         elif self.model_type in ['sirs_zero_layer', 'sirs_one_layer', 'sirs_one_layer_incidence']:
             assert len(initial_conditions) == 3, "Expected 3 initial conditions for this model."
-        elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence']:
+        elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence', 'sirs_two_layers_one_memory', 'sirs_two_layers_one_memory_incidence']:
             assert len(initial_conditions) == 4, "Expected 4 initial conditions for this model."
 
         t = np.linspace(t_span[0], t_span[1], 20000)
@@ -133,6 +172,43 @@ class SIRS:
         m1 = initial_conditions[2] if len(initial_conditions) == 3 else None
         m2 = initial_conditions[3] if len(initial_conditions) == 4 else None
 
-        print(m1, m2)
         solution = self._solve_odes(t, t_span, i, r, m1, m2)
         return solution.sol(t)
+
+
+    @property
+    def params(self) -> dict:
+        """
+        Return the model parameters.
+        """
+        return {k:v for k,v in vars(self).items()}
+
+
+    def __str__(self) -> str:
+        parameters = self.model.params
+        return f"Model Configuration:\n{parameters}"
+
+
+
+if __name__ == "__main__":
+    params = {
+        'model_type': 'sirs_one_layer',
+        'r0': 2.5,
+        'gamma': 1/7,
+        'mu': 1/80/365,
+        'theta': 1/365,
+        'a1': 0.5,
+        'a2': 0.5,
+        'k1': 1.,
+        'k2': 1.,
+        'alpha1': 1.,
+        'alpha2': 1.,
+        'delta': 0.,
+        'omega': 0.
+    }
+
+    model = SIRS(
+        model_params = params
+    )
+
+    print(model.params)

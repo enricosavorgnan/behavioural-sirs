@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 import numpy as np
-from code.core.models_refactor import SIRS
 from code.core.beta_functions import BetaFunction
 
 class SIRSModels:
 
     def __init__(self,
-                 model_params : SIRS | None = None,
+                 model_params : dict | None = None,
                  model_type: str | None = 'sirs',
                  r0: float | None = 0.,
                  gamma: float | None = 0.,
@@ -20,9 +21,11 @@ class SIRSModels:
                  delta: float | None = 0.,
                  omega: float | None = 2 * np.pi / 365):
 
-        self.model_type = model_type if model_params is None else model_params.model_type
+        self.model_type = model_type if model_params is None else model_params.get('model_type', 'sirs')
         # Model must be valid
         assert self.model_type in ['sirs',
+                                   'sirs_zero_layer',
+                                   'sirs_zero_layer_incidence',
                                    'sirs_one_layer',
                                    'sirs_one_layer_incidence',
                                    'sirs_two_layer',
@@ -31,18 +34,18 @@ class SIRSModels:
                                    'sirs_two_layer_incidence_one_memory'
                                    ], f"Specified model type {self.model_type} is not valid."
 
-        self.r0 = r0 if model_params is None else model_params.r0
-        self.gamma = gamma if model_params is None else model_params.gamma
-        self.mu = mu if model_params is None else model_params.mu
-        self.theta = theta if model_params is None else model_params.theta
-        self.a1 = a1 if model_params is None else model_params.a1
-        self.a2 = a2 if model_params is None else model_params.a2
-        self.k1 = k1 if model_params is None else model_params.k1
-        self.k2 = k2 if model_params is None else model_params.k2
-        self.alpha1 = alpha1 if model_params is None else model_params.alpha1
-        self.alpha2 = alpha2 if model_params is None else model_params.alpha2
-        self.delta = delta if model_params is None else model_params.delta
-        self.omega = omega if model_params is None else model_params.omega
+        self.r0 = r0 if model_params is None else model_params.get('r0', 1.)
+        self.gamma = gamma if model_params is None else model_params.get('gamma', 0.)
+        self.mu = mu if model_params is None else model_params.get('mu', 0.)
+        self.theta = theta if model_params is None else model_params.get('theta', 0.)
+        self.a1 = a1 if model_params is None else model_params.get('a1', 0.)
+        self.a2 = a2 if model_params is None else model_params.get('a2', 0.)
+        self.k1 = k1 if model_params is None else model_params.get('k1', 1.)
+        self.k2 = k2 if model_params is None else model_params.get('k2', 1.)
+        self.alpha1 = alpha1 if model_params is None else model_params.get('alpha1', 1.)
+        self.alpha2 = alpha2 if model_params is None else model_params.get('alpha2', 1.)
+        self.delta = delta if model_params is None else model_params.get('delta', 0.)
+        self.omega = omega if model_params is None else model_params.get('omega', 2 * np.pi / 365)
 
         # Model must not have None parameters
         assert isinstance(self.r0, (int, float)), "R0 provided should be set for SIRS model."
@@ -71,6 +74,8 @@ class SIRSModels:
     def set_model(self):
         models = {
             'sirs':                                 self.sirs,
+            'sirs_zero_layer':                      self.sirs_zero_layer,
+            'sirs_zero_layer_incidence':            self.sirs_zero_layer_incidence,
             'sirs_one_layer':                       self.sirs_one_layer,
             'sirs_one_layer_incidence':             self.sirs_one_layer_incidence,
             'sirs_two_layer':                       self.sirs_two_layer,
@@ -201,6 +206,7 @@ class SIRSModels:
 
 
 if __name__ == '__main__':
+    # noinspection PyArgumentEqualDefault
     model = SIRSModels(
         model_type='sirs_two_layer_incidence',
         r0 = 2,

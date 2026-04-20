@@ -2,6 +2,9 @@
 import numpy as np
 
 class BetaFunction:
+    """
+    Several implementations of β() functions
+    """
     def __init__(self,
                  model_type : str = 'sirs' ,
                  beta_zero : float = 0.,
@@ -18,6 +21,7 @@ class BetaFunction:
         self.delta = delta
         self.omega = omega
 
+
     def set_beta_function(self):
         if self.model_type in ['sirs'] :
             return self.beta_const
@@ -28,11 +32,13 @@ class BetaFunction:
         else:
             raise ValueError(f"Specified model type {self.model_type} is not valid.")
 
-    def beta_const(self, t, *args):
+
+    def beta_const(self, t : float | None = None , *args):
         if self.delta != 0:
             dumping = 1 + self.delta * np.cos(self.omega * t)
             return dumping * self.beta_zero
         return self.beta_zero
+
 
     def beta_one(self, t, X, *args):
         infection_rate = self.beta_zero / (1 + self.alpha1 * X)
@@ -41,10 +47,10 @@ class BetaFunction:
             return infection_rate * dumping
         return infection_rate
 
+
     def beta_two(self, t, X1, X2):
         infection_rate = self.beta_zero / (1 + self.alpha1 * X1 + self.alpha2 * X2)
         if self.delta != 0:
             dumping = 1 + self.delta * np.cos(self.omega * t)
             return infection_rate * dumping
         return infection_rate
-
