@@ -1,25 +1,25 @@
 # Configuration File for SIMULATION 1
 
-simulation_n : 2
-simulation_name : "Simulation 2: R₀, θ, plot Memory"
+simulation_n : 3
+simulation_name : "Simulation 3: K"
 
 
 
 # Model parameters
 
-model_type: 'sirs_two_layer'
+model_type: 'sirs_two_layer_incidence'
 
-r0 : [1.1, 2.5, 5, 10]
-theta : [!expr 1/30, !expr 1/60, !expr 1/90, !expr 1/365]
+r0 : 2.5
+theta : !expr 1/365
 
 mu : !expr 1/365/80
 gamma : !expr 1/14
-a1 : !expr 1/15
-a2 : !expr 1/90
+a1 : !expr 1/30
+a2 : !expr 1/120
 k1 : 1.
-k2 : 1
-alpha1 : 1.
-alpha2 : 1.
+k2 : 1.
+alpha1 : [0.1, 1., 10., 100.]
+alpha2 : [0.1, 1., 10., 100.]
 
 delta : 0.
 omega : 0.

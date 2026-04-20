@@ -1,23 +1,22 @@
 # Configuration File for SIMULATION 1
 
-simulation_n : 2
-simulation_name : "Simulation 2: R₀, θ, plot Memory"
+simulation_n : 0
+simulation_name : "Simulation 0: JASM: Just A Sirs Model"
 
 
 
 # Model parameters
 
-model_type: 'sirs_two_layer'
+model_type: 'sirs'
 
-r0 : [1.1, 2.5, 5, 10]
-theta : [!expr 1/30, !expr 1/60, !expr 1/90, !expr 1/365]
-
+r0 : 2.5
+theta : !expr 1/365
 mu : !expr 1/365/80
 gamma : !expr 1/14
-a1 : !expr 1/15
-a2 : !expr 1/90
+a1 : 0.033
+a2 : 0.012
 k1 : 1.
-k2 : 1
+k2 : 1.
 alpha1 : 1.
 alpha2 : 1.
 
@@ -25,7 +24,7 @@ delta : 0.
 omega : 0.
 
 t_span : [0, 10000]
-initial_conditions : [0.01, 0., 0., 0.]
+initial_conditions : [0.01, 0. ]
 
 
 
@@ -36,4 +35,4 @@ show_params : False
 show_title : False
 
 plot_together : True
-plot_t_span : [0, 1000]
+plot_t_span : [0, 1250]

@@ -145,8 +145,9 @@ class SIRSModels:
 
         dI = incidence - I * (self.mu + self.gamma)
         dR = self.gamma * I - (self.mu + self.theta) * R
+        dM = dI
 
-        return [dI, dR]
+        return [dI, dR, dM]
 
 
     def sirs_one_layer_incidence(self, t, X):

@@ -80,11 +80,10 @@ class SIRS:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
 
-        self.model_type : str = config.get('type', 'sirs')
+        self.model_type : str = config.get('model_type', 'sirs')
         self.r0 : float  = config.get('r0', 0.)
         self.mu : float = config.get('mu', 0.)
         self.gamma : float = config.get('gamma', 0.)
-        print(f'gamma: {self.gamma}')
         self.theta : float = config.get('theta', 0.)
         self.a1 : float = config.get('a1', 0.)
         self.a2 : float = config.get('a2', 0.)
@@ -119,7 +118,7 @@ class SIRS:
                     r : float,
                     m1 : float | None = None,
                     m2 : float | None = None,
-                    method : str = 'RK45'):
+                    method : str | None = 'RK45'):
         """
             Internal method to solve the ODEs based on the model type and parameters.
 
@@ -179,7 +178,7 @@ class SIRS:
 
 
     def \
-            simulate(self, t_span: list, initial_conditions: list):
+            simulate(self, t_span: list, initial_conditions: list, n_points : int):
         """
         Simulate the SIRS model over the given time span and initial conditions.
 
@@ -189,21 +188,24 @@ class SIRS:
             List of two elements [t_start, t_end] defining the time span for the simulation.
         initial_conditions: list
             List of initial conditions for the model variables.
+        n_points : int
+            Number of time points to evaluate the solution at.
         """
-        if self.model_type in ['sirs', 'sirs_zero_layer_incidence']:
+        if self.model_type in ['sirs']:
             assert len(initial_conditions) == 2, "Expected 2 initial conditions for this model."
-        elif self.model_type in ['sirs_zero_layer', 'sirs_one_layer', 'sirs_one_layer_incidence']:
+        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence']:
             assert len(initial_conditions) == 3, "Expected 3 initial conditions for this model."
         elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence', 'sirs_two_layers_one_memory', 'sirs_two_layers_one_memory_incidence']:
             assert len(initial_conditions) == 4, "Expected 4 initial conditions for this model."
 
-        t = np.linspace(t_span[0], t_span[1], 20000)
+        t = np.linspace(t_span[0], t_span[1], num=n_points)
 
-        i, r = initial_conditions[0], initial_conditions[1]
-        m1 = initial_conditions[2] if len(initial_conditions) == 3 else None
+        i = initial_conditions[0]
+        r = initial_conditions[1]
+        m1 = initial_conditions[2] if len(initial_conditions) >= 3 else None
         m2 = initial_conditions[3] if len(initial_conditions) == 4 else None
 
-        solution = self._solve_odes(t, t_span, i, r, m1, m2)
+        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2)
         return solution.sol(t)
 
 

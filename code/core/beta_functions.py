@@ -25,7 +25,7 @@ class BetaFunction:
     def set_beta_function(self):
         if self.model_type in ['sirs'] :
             return self.beta_const
-        elif self.model_type in ['sirs_one_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_one_memory', 'sirs_two_layer_incidence_one_memory']:
+        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_one_memory', 'sirs_two_layer_incidence_one_memory']:
             return self.beta_one
         elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence']:
             return self.beta_two

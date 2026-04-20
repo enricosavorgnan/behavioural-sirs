@@ -101,7 +101,7 @@ class Plots:
                 ax.text(0.5, -0.15, params_text, ha='center', va='center', transform=ax.transAxes)
 
         if self.save_figures:
-            plt.savefig(kwargs.get('image_path', './img/img1.png'), dpi=450, format='png')
+            plt.savefig(kwargs.get('image_path', './img/img1.png'), dpi=450, format='pdf')
 
         if self.show_cumulative_incidence:
             model = kwargs['model'] if 'model' in kwargs else None
@@ -112,7 +112,7 @@ class Plots:
         return
 
 
-    def plot_simulation(self, solution : list[np.ndarray] | np.ndarray, t_span : list[float | int], **kwargs) -> plt.Figure:
+    def plot_simulation(self, solution : list[np.ndarray] | np.ndarray, t_span : list[float | int], n_points : int, **kwargs) -> plt.Figure:
         """
         Plot the results of a single simulation of a SIRS model.
 
@@ -128,63 +128,74 @@ class Plots:
             Additional parameters to be used for plotting many details.
             See self._manage_plot_settings for more details
         """
-        t = np.linspace(t_span[0], t_span[1], 20000)
+        t = np.linspace(t_span[0], t_span[1], n_points)
 
         plt.rcParams['text.usetex'] = True
         plt.figure(figsize=(8, 5))
         plt.xlabel(r'$t$')
         plt.ylabel(r'$f(t)$')
-        plt.ylim(-0.05, 1.05)
+        # plt.ylim(-0.05, 1.05)
         plt.grid(linestyle='dotted')
         plt.tight_layout()
 
         for ts in solution:
-            plt.plot(t, ts)
+            plt.plot(t, ts[:n_points])
 
         self._manage_plot_settings(plt.gcf(), solution, t_span, **kwargs)
         return plt.gcf()
 
 
-    def plot_simulations(self, solutions: list, t_span: list[float | int], **kwargs) -> plt.Figure:
+    def plot_simulations(self, solutions: list[np.ndarray], t_span: list[float | int], n_points : int, **kwargs) -> plt.Figure:
         """
-        Plot results from multiple SIRS model simulations on the same axes.
-        Follows the structure of self.plot_simulation.
+        Plots results in a grid where rows represent unique R0 values
+        and columns represent unique theta values.
 
         Parameters
         ----------
-        solutions : list
-            List of solutions. Each element should be the output of a model simulation.
+        solutions : list[np.ndarray]
+            List of arrays containing the dynamics of a class during time for each simulation.
         t_span : list[float | int]
             Start and end time for the x-axis.
-        **kwargs
-            Additional parameters.
-            Note: 'model' in kwargs will be used by _manage_plot_settings for param text.
+        n_points : int
+            Number of points where to evaluate the functions.
         """
-        t = np.linspace(t_span[0], t_span[1], 20000)
+        # 1. Extract unique parameters to define grid dimensions
+        n_rows = len(solutions) // 2
+        n_cols = len(solutions) // 2
 
         plt.rcParams['text.usetex'] = True
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows),
+                                 sharex=True, sharey=True, squeeze=False)
 
-        ax.set_xlabel(r'$t$')
-        ax.set_ylabel(r'$f(t)$')
-        ax.set_ylim(-0.05, 1.05)
-        ax.grid(linestyle='dotted')
+        t = np.linspace(t_span[0], t_span[1], n_points)
 
-        # Iterate through model-solution pairs to allow for specific labeling
-        for sol in solutions:
-            # Assume sol is a list of trajectories (S, I, R, etc.)
-            for i, ts in enumerate(sol):
-                ax.plot(t, ts)
+        # 2. Map results to the grid
+        for i, solution in enumerate(solutions):
 
-        ax.legend()
+            # Find index in grid
+            row_idx = i // n_cols
+            col_idx = i % n_cols
+            ax = axes[row_idx, col_idx]
+
+            # Plot each trajectory in the solution (S, I, R, etc.)
+            for j, ts in enumerate(solution):
+                ax.plot(t, ts[:n_points])
+
+
+            ax.grid(linestyle='dotted')
+            # ax.set_ylim(-0.05, 1.05)
+
+        # Global labels
+        fig.supxlabel(r'$t$')
+        fig.supylabel(r'$f(t)$')
+
         plt.tight_layout()
 
-        self._manage_plot_settings(fig, solutions[0], t_span, **kwargs)
+        self._manage_plot_settings(fig, solutions[0], t_span, **kwargs)  # Pass first solution for settings
 
         return fig
 
-
-    def plot_memory(self, solutions, t_span, **kwargs) -> plt.Figure:
+    def plot_memory(self, solutions, t_span, n_points, **kwargs) -> plt.Figure:
         """
         Specific wrapper that prepares memory-specific labels/styles
         before calling the general plotting logic.
@@ -195,4 +206,4 @@ class Plots:
         # Pass only I, M1, M2
         memory_solutions = [sol[[0, 2, 3]] for sol in solutions]
 
-        return self.plot_simulations(memory_solutions, t_span, **kwargs)
+        return self.plot_simulations(memory_solutions, t_span, n_points, **kwargs)

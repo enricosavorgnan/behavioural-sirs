@@ -14,8 +14,8 @@ theta : [!expr 1/30, !expr 1/60, !expr 1/90, !expr 1/365]
 
 mu : !expr 1/365/80
 gamma : !expr 1/14
-a1 : !expr 1/15
-a2 : !expr 1/90
+a1 : 0.033
+a2 : 0.012
 k1 : 1.
 k2 : 1
 alpha1 : 1.
