@@ -1,7 +1,7 @@
-# Configuration File for SIMULATION 1
+# Configuration File for SIMULATION 3
 
 simulation_n : 3
-simulation_name : "Simulation 3: K"
+simulation_name : "Simulation 3: alpha1, alpha2"
 
 
 
@@ -9,17 +9,17 @@ simulation_name : "Simulation 3: K"
 
 model_type: 'sirs_two_layer_incidence'
 
-r0 : 2.5
+r0 : 2.
 theta : !expr 1/365
 
 mu : !expr 1/365/80
-gamma : !expr 1/14
-a1 : !expr 1/30
-a2 : !expr 1/120
+gamma : !expr 1/7
+a1 : !expr 1/15
+a2 : !expr 1/90
 k1 : 1.
 k2 : 1.
-alpha1 : [0.1, 1., 10., 100.]
-alpha2 : [0.1, 1., 10., 100.]
+alpha1 : [1., 10., 50., 100.]
+alpha2 : [1., 10., 50., 100.]
 
 delta : 0.
 omega : 0.

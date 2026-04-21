@@ -49,7 +49,7 @@ class BetaFunction:
 
 
     def beta_two(self, t, X1, X2):
-        infection_rate = self.beta_zero / (1 + self.alpha1 * X1 + self.alpha2 * X2)
+        infection_rate = self.beta_zero / (1 + self.alpha1 * X1) / (1 + self.alpha2 * X2)
         if self.delta != 0:
             dumping = 1 + self.delta * np.cos(self.omega * t)
             return infection_rate * dumping

@@ -1,15 +1,15 @@
-# Configuration File for SIMULATION 1
+# Configuration File for SIMULATION 9a
 
-simulation_n : 0
-simulation_name : "Simulation 0: JASM: Just Another Sirs Model"
+simulation_n : 9a
+simulation_name : "Simulation 9a: Special: many alpha"
 
 
 
 # Model parameters
 
-model_type: 'sirs'
+model_type: 'sirs_zero_layer'
 
-r0 : 2.5
+r0 : 2
 theta : !expr 1/365
 mu : !expr 1/365/80
 gamma : !expr 1/14
@@ -24,8 +24,10 @@ delta : 0.
 omega : 0.
 
 t_span : [0, 10000]
-initial_conditions : [0.01, 0. ]
+initial_conditions : [0.001, 0., 0.]
 
+range_alpha : [0., 100.]
+n_alpha : 200
 
 
 # Plotting parameters

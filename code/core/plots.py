@@ -21,12 +21,14 @@ class Plots:
                  show_cumulative_incidence : bool = False,
                  show_params : bool = False,
                  show_title : bool = False,
+                 show_legend : bool = False,
                  save_figures : bool = False,
                  ):
 
         self.show_cumulative_incidence = show_cumulative_incidence
         self.show_params = show_params
         self.show_title = show_title
+        self.show_legend = show_legend
         self.save_figures = save_figures
 
 
@@ -100,14 +102,28 @@ class Plots:
 
                 ax.text(0.5, -0.15, params_text, ha='center', va='center', transform=ax.transAxes)
 
-        if self.save_figures:
-            plt.savefig(kwargs.get('image_path', './img/img1.png'), dpi=450, format='pdf')
-
         if self.show_cumulative_incidence:
             model = kwargs['model'] if 'model' in kwargs else None
             if isinstance(model, SIRS):
                 ci = model.cumulative_incidence(solution, t_span)
                 ax.text(0.5, -0.25, f"Cumulative incidence: {ci:.4f}", ha='center', va='center', transform=ax.transAxes)
+
+        if self.show_legend:
+            legend_labels = kwargs.get('legend', [])
+            print(f'legend:labels: {legend_labels}')
+            axes = fig.get_axes()
+
+            for ax in axes:
+                lines = ax.get_lines()
+                if lines and legend_labels:
+                    for line, label in zip(lines, legend_labels):
+                        line.set_label(label)
+                    # loc='best' sometimes fails if the plot is crowded
+                    ax.legend(loc='upper right', fontsize='small')
+
+        if self.save_figures:
+            plt.savefig(kwargs.get('image_path', './img/img1.png'), dpi=450, format='pdf')
+
 
         return
 
@@ -124,6 +140,8 @@ class Plots:
         t_span : list[float | int]
             List containing the start and end time of the simulation.
             Used for plotting the x-axis.
+        n_points : int
+            Number of points where to evaluate the functions.
         **kwargs
             Additional parameters to be used for plotting many details.
             See self._manage_plot_settings for more details
@@ -131,17 +149,21 @@ class Plots:
         t = np.linspace(t_span[0], t_span[1], n_points)
 
         plt.rcParams['text.usetex'] = True
-        plt.figure(figsize=(8, 5))
+        plt.figure(figsize=(5, 5))
         plt.xlabel(r'$t$')
         plt.ylabel(r'$f(t)$')
         # plt.ylim(-0.05, 1.05)
         plt.grid(linestyle='dotted')
-        plt.tight_layout()
 
         for ts in solution:
-            plt.plot(t, ts[:n_points])
+            try:
+                plt.plot(t, ts[: n_points])
+            except IndexError:
+                plt.plot(t, solution)
 
         self._manage_plot_settings(plt.gcf(), solution, t_span, **kwargs)
+        plt.tight_layout()
+
         return plt.gcf()
 
 

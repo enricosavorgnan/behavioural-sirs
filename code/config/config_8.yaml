@@ -1,0 +1,40 @@
+# Configuration File for SIMULATION 8
+
+simulation_n : 8
+simulation_name : "Simulation 8: alpha1, alpha2, model types"
+
+
+
+# Model parameters
+
+model_type: ['sirs', 'sirs_zero_layer', 'sirs_one_layer', 'sirs_two_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_incidence', 'sirs_two_layer_one_memory', 'sirs_two_layer_incidence_one_memory']
+
+r0 : 2.
+theta : !expr 1/365
+
+mu : !expr 1/365/80
+gamma : !expr 1/7
+a1 : !expr 1/15
+a2 : !expr 1/90
+k1 : 1.
+k2 : 1.
+alpha1 : [1., 10., 50., 100.]
+alpha2 : [1., 10., 50., 100.]
+
+delta : 0.
+omega : 0.
+
+t_span : [0, 10000]
+initial_conditions : [0.001, 0., 0., 0.]
+
+
+
+# Plotting parameters
+
+show_cumulative_incidence : False
+show_params : False
+show_title : False
+show_legend : True
+
+plot_together : False
+plot_t_span : [0, 1000]

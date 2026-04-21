@@ -1,7 +1,7 @@
 # Configuration File for SIMULATION 1
 
-simulation_n : 2
-simulation_name : "Simulation 2: R₀, θ, plot Memory"
+simulation_n : 1
+simulation_name : "Simulation 1: R₀, θ"
 
 
 

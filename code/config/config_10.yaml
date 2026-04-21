@@ -1,0 +1,40 @@
+# Configuration File for SIMULATION 9a
+
+simulation_n : 9a
+simulation_name : "Simulation 9a: Special: many alpha"
+
+
+
+# Model parameters
+
+model_type: 'sirs_zero_layer'
+
+r0 : 2
+theta : !expr 1/365
+mu : !expr 1/365/80
+gamma : !expr 1/14
+a1 : 0.033
+a2 : 0.012
+k1 : 1.
+k2 : 1.
+alpha1 : 2.
+alpha2 : 2.
+
+delta : 0.
+omega : 0.
+
+t_span : [0, 20000]
+initial_conditions : [0.001, 0., 0.]
+
+range_r0 : [1.001, 100]
+n_r0 : 200
+
+
+
+# Plotting parameters
+
+show_cumulative_incidence : False
+show_params : False
+show_title : False
+
+plot_together : True

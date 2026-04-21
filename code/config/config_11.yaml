@@ -1,0 +1,38 @@
+# Configuration File for SIMULATION 11
+
+simulation_n : 11
+simulation_name : "Simulation 11: Model types, but also mu=0"
+
+
+
+# Model parameters
+
+model_type: ['sirs', 'sirs_zero_layer']
+
+r0 : 5.
+theta : !expr 1/30
+mu : !expr 1/365/80
+gamma : !expr 1/7
+a1 : !expr 1/30
+a2 : !expr 1/120
+k1 : 1.
+k2 : 1.
+alpha1 : 1.
+alpha2 : 1.
+
+delta : 0.
+omega : 0.
+
+t_span : [0, 20000]
+initial_conditions : [0.001, 0., 0., 0.]
+
+
+
+# Plotting parameters
+
+show_cumulative_incidence : False
+show_params : False
+show_title : False
+
+plot_together : True
+plot_t_span : [0, 200]
