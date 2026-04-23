@@ -110,7 +110,6 @@ class Plots:
 
         if self.show_legend:
             legend_labels = kwargs.get('legend', [])
-            print(f'legend:labels: {legend_labels}')
             axes = fig.get_axes()
 
             for ax in axes:

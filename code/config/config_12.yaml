@@ -1,16 +1,12 @@
-# Configuration File for SIMULATION 6
+# Configuration File for SIMULATION 12
 
-simulation_n : 6
-simulation_name : "Simulation 6: a1, a2"
+simulation_n : 12
+simulation_name : "Simulation 12: a1, a2"
 
 
 
 # Model parameters
 
-# CHANGE ALSO INITIAL_CONDITIONS
-#model_type: 'sirs_one_layer'
-#model_type: 'sirs_one_layer_incidence'
-#model_type: 'sirs_two_layer'
 model_type: 'sirs_two_layer_incidence'
 
 r0 : 1.5
@@ -28,8 +24,7 @@ alpha2 : 50.
 delta : 0.
 omega : 0.
 
-t_span : [0, 5000]
-#initial_conditions : [0.001, 0., 0.]
+t_span : [0, 20000]
 initial_conditions : [0.001, 0., 0., 0.]
 
 

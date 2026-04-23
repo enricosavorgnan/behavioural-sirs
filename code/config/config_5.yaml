@@ -7,7 +7,7 @@ simulation_name : "Simulation 5: R0, theta, Model types"
 
 # Model parameters
 
-model_type: ['sirs_one_layer', 'sirs_one_layer_incidence', 'sirs_two_layer', 'sirs_two_layer_incidence']
+model_type: ['sirs', 'sirs_zero_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_incidence']
 
 r0 : [1.05, 2, 5, 18]
 theta : [!expr 1/3650, !expr 1/365, !expr 1/180, !expr 1/30]
@@ -24,7 +24,7 @@ alpha2 : 100.
 delta : 0.
 omega : 0.
 
-t_span : [0, 10000]
+t_span : [0, 20000]
 initial_conditions : [0.01, 0., 0., 0.]
 
 

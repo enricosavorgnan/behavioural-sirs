@@ -7,7 +7,7 @@ simulation_name : "Simulation 8: alpha1, alpha2, model types"
 
 # Model parameters
 
-model_type: ['sirs', 'sirs_zero_layer', 'sirs_one_layer', 'sirs_two_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_incidence', 'sirs_two_layer_one_memory', 'sirs_two_layer_incidence_one_memory']
+model_type: ['sirs', 'sirs_one_layer', 'sirs_two_layer', 'sirs_one_layer_incidence', 'sirs_two_layer_incidence']
 
 r0 : 2.
 theta : !expr 1/365
@@ -34,7 +34,7 @@ initial_conditions : [0.001, 0., 0., 0.]
 show_cumulative_incidence : False
 show_params : False
 show_title : False
-show_legend : True
+show_legend : False
 
 plot_together : False
 plot_t_span : [0, 1000]

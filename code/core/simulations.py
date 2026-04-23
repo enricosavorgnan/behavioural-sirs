@@ -88,7 +88,7 @@ class Simulations:
 
 
 
-    def _retrieve_list_img_path(self, config_path : str, n_simulation : int, n_imgs : int, curr_i : int):
+    def _retrieve_list_img_path(self, config_path : str, n_simulation : int | str, n_imgs : int, curr_i : int):
         """
         Retrieve the image path if the image is member of a list of images
         """
@@ -245,7 +245,6 @@ class Simulations:
                     show_params = config.get('show_params', False),
                     show_title = config.get('show_title', False),
                     save_figures = True).plot_simulation(solution=solutions, t_span=plot_t_span, n_points=plot_n_points, **params)
-        fig.show()
         return fig
 
 
@@ -291,7 +290,7 @@ class Simulations:
 
         t_span = config.get('t_span', [0, 20000])
         n_points = config.get('n_points', 20000)
-        plot_t_span = [[0, 2000], [0, 1250], [0, 400], [0, 400]]
+        plot_t_span = [[0, 2500], [0, 1250], [0, 400], [0, 400]]
         plot_n_points = [(n_points * (plot_t_span[i][1]-plot_t_span[i][0])) // (t_span[1]-t_span[0]) + 1 for i in range(4)]
         initial_conditions = config.get('initial_conditions', [0.99, 0.01, 0])
 
@@ -320,7 +319,7 @@ class Simulations:
 
         else:
             for i, solution in enumerate(solutions):
-                params = {'image_path': self._retrieve_list_img_path(config_path=config_path, n_simulation=5, n_imgs=len(solutions), curr_i=i)}
+                params = {'image_path': self._retrieve_list_img_path(config_path=config_path, n_simulation='05', n_imgs=len(solutions), curr_i=i)}
                 fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
                             show_params = config.get('show_params', False),
                             show_title = config.get('show_title', False),
@@ -402,7 +401,7 @@ class Simulations:
 
         else:
             for i, solution in enumerate(solutions):
-                params = {'image_path': self._retrieve_list_img_path(config_path=config_path, n_simulation=7, n_imgs=len(solutions), curr_i=i)}
+                params = {'image_path': self._retrieve_list_img_path(config_path=config_path, n_simulation='07', n_imgs=len(solutions), curr_i=i)}
                 fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
                             show_params = config.get('show_params', False),
                             show_title = config.get('show_title', False),
@@ -447,7 +446,7 @@ class Simulations:
 
         else:
             for i, solution in enumerate(solutions):
-                params = {'image_path': self._retrieve_list_img_path(config_path=config_path, n_simulation=8, n_imgs=len(solutions), curr_i=i),
+                params = {'image_path': self._retrieve_list_img_path(config_path=config_path, n_simulation='08', n_imgs=len(solutions), curr_i=i),
                           'legend': self._retrieve_model_string(model_types=config.get('model_type', 'sirs')) }
                 fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
                             show_params = config.get('show_params', False),
@@ -580,8 +579,40 @@ class Simulations:
         return fig
 
 
+    def simulation_12(self, config_path : str) -> plt.Figure | None:
+        """
+        Simulation 6: different a1, a2
+        """
+        config = self._load_yaml(config_path)
+
+        t_span = config.get('t_span', [0, 20000])
+        n_points = config.get('n_points', 20000)
+        plot_t_span = config.get('plot_t_span', t_span)
+        plot_n_points = (n_points * (plot_t_span[1]-plot_t_span[0])) // (t_span[1]-t_span[0]) + 1
+        initial_conditions = config.get('initial_conditions', [0.99, 0.01, 0])
+        model_type = config.get('model_type', 'sirs')
+
+        a1s = config.get('a1', 1/30)
+        a2s = config.get('a2', 1/90)
+
+        solutions = []
+        for a1, a2 in zip(a1s, a2s):
+            params = {'a1': a1, 'a2': a2}
+            model = SIRS(config_path=config_path, **params)
+            solution = model.simulate(t_span=t_span, n_points=n_points, initial_conditions=initial_conditions)
+            solutions.append(solution[0])
+
+        # Plot results
+        params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='12')}
+        fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
+                    show_params = config.get('show_params', False),
+                    show_title = config.get('show_title', False),
+                    save_figures = True).plot_simulation(solution=solutions, t_span=plot_t_span, n_points=plot_n_points, **params)
+        return fig
+
+
 
 
 
 if __name__ == '__main__':
-    Simulations().simulation_11(config_path ='../config/config_11.yaml')
+    Simulations().simulation_8(config_path ='../config/config_8.yaml')

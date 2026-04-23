@@ -24,7 +24,7 @@ alpha2 : [1., 10., 50., 100.]
 delta : 0.
 omega : 0.
 
-t_span : [0, 10000]
+t_span : [0, 20000]
 initial_conditions : [0.01, 0., 0., 0.]
 
 
@@ -36,4 +36,4 @@ show_params : False
 show_title : False
 
 plot_together : True
-plot_t_span : [0, 1000]
+plot_t_span : [0, 1200]

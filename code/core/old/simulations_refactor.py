@@ -135,7 +135,7 @@ class Simulations:
     def simulation_3_r0_and_theta(self, models, params, r0_theta_list, show_cumulative_incidence=False):
         """
         Simulation 3. of the thesis.
-        Same as simulation_1 but with more parameters.
+        Same as simulation_01 but with more parameters.
         """
 
         assert len(r0_theta_list) == 9, "Servono esattamente 9 coppie (R0, θ)"
@@ -1118,7 +1118,7 @@ def simulation_2(models, params):
 def simulation_3a(models, params, r0_theta_list, show_cumulative_incidence=False):
     """
     Simulation 3. of the thesis.
-    Same as simulation_1 but with more parameters.
+    Same as simulation_01 but with more parameters.
     """
 
     assert len(r0_theta_list) == 9, "Servono esattamente 9 coppie (R0, θ)"
