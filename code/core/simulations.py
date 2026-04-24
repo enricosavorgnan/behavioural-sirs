@@ -7,11 +7,14 @@ Provides simulation methods used in the thesis and in the jupyter file `simulati
 """
 import numpy as np
 import yaml
+
 from code.core.models import SIRS
+from code.core.maths import RH_FifthOrder
 from code.core.plots import Plots
 from code.core.utils import expr
 import matplotlib.pyplot as plt
 import datetime
+
 
 
 class Simulations:
@@ -52,11 +55,19 @@ class Simulations:
             'sirs_zero_layer' : '0L',
             'sirs_one_layer' : '1L',
             'sirs_two_layer' : '2L',
+            'sirs_three_layer': '3L',
+
             'sirs_zero_layer_incidence' : '0LI',
             'sirs_one_layer_incidence' : '1LI',
             'sirs_two_layer_incidence' : '2LI',
+            'sirs_three_layer_incidence' : '3LI',
+
             'sirs_two_layer_one_memory' : '2L1M',
-            'sirs_two_layer_incidence_one_memory' : '2LI1M'
+            'sirs_two_layer_incidence_one_memory' : '2LI1M',
+            'sirs_three_layer_one_memory' : '3L1M',
+            'sirs_three_layer_incidence_one_memory' : '3LI1M',
+            'sirs_three_layer_two_memory' : '3L2M',
+            'sirs_three_layer_incidence_two_memory' : '3LI2M'
         }
         if type(model_types) == str:
             return match_type[model_types]
@@ -581,7 +592,7 @@ class Simulations:
 
     def simulation_12(self, config_path : str) -> plt.Figure | None:
         """
-        Simulation 6: different a1, a2
+        Simulation 12: different a1, a2, model_type
         """
         config = self._load_yaml(config_path)
 
@@ -611,8 +622,54 @@ class Simulations:
         return fig
 
 
+    def simulation_13(self, config_path : str) -> plt.Figure | None:
+        # TODO: Routh-Hurwitz stability for 2nd order polynomial
+        return None
 
+    def simulation_14(self, config_path : str) -> plt.Figure | None:
+        # TODO: Routh-Hurwitz stability for 3rd order polynomial
+        return None
+
+    def simulation_15(self, config_path : str) -> plt.Figure | None:
+        # TODO: Routh-Hurwitz stability for 4th order polynomial
+        return None
+
+    def simulation_16(self, config_path : str) -> plt.Figure | None:
+        """
+        Simulation 16: Routh-Hurwitz stability for 5th order polynomial
+        """
+        config = self._load_yaml(config_path=config_path)
+
+        t_span = config.get('t_span', [0, 20000])
+        n_points = config.get('n_points', 20000)
+
+        target = config.get('target', 'a1')
+        assert target in ['a1', 'a2', 'a3'], f"Unknown target: {target}"
+        target_span = config.get('target_span', [0, 1])
+        target_n_points = config.get('target_n_points', 10)
+        initial_conditions = config.get('initial_conditions', [0.999, 0.001, 0.])
+
+        targets = np.linspace(target_span[0], target_span[1], target_n_points)
+        rh_cond1_s, rh_cond2_s = [], []
+        for targ in targets:
+            params = {target: targ}
+            model = SIRS(config_path=config_path, **params)
+            solution = model.simulate(t_span=t_span, n_points=n_points, initial_conditions=initial_conditions)
+            equilibrium = [solution[0][-1], solution[1][-1], solution[2][-1], solution[3][-1], solution[4][-1]]
+            rh_cond_1, rh_cond_2 = RH_FifthOrder(target=target, equilibrium=equilibrium, model=model).compute(x=targ)
+            rh_cond1_s.append(rh_cond_1)
+            rh_cond2_s.append(rh_cond_2)
+
+        rhs = np.array([rh_cond1_s, rh_cond2_s])
+        # rhs = np.array([rh_cond2_s])
+
+        params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='16')}
+        fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
+                    show_params = config.get('show_params', False),
+                    show_title = config.get('show_title', False),
+                    save_figures = True).plot_simulation(solution=rhs, t_span=target_span, n_points=target_n_points, **params)
+        return fig
 
 
 if __name__ == '__main__':
-    Simulations().simulation_8(config_path ='../config/config_8.yaml')
+    Simulations().simulation_16(config_path ='../config/config_16.yaml')

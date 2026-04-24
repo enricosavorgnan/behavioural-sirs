@@ -14,10 +14,13 @@ class SIRSModels:
                  theta: float | None = 0.,
                  a1: float | None = 0.,
                  a2: float | None = 0.,
+                 a3: float | None = 0.,
                  k1: float | None = 1.,
                  k2: float | None = 1.,
+                 k3: float | None = 1.,
                  alpha1 : float | None = 1.,
                  alpha2 : float | None = 1.,
+                 alpha3 : float | None = 1.,
                  delta: float | None = 0.,
                  omega: float | None = 2 * np.pi / 365):
 
@@ -31,7 +34,13 @@ class SIRSModels:
                                    'sirs_two_layer',
                                    'sirs_two_layer_incidence',
                                    'sirs_two_layer_one_memory',
-                                   'sirs_two_layer_incidence_one_memory'
+                                   'sirs_two_layer_incidence_one_memory',
+                                   'sirs_three_layer',
+                                   'sirs_three_layer_incidence',
+                                   'sirs_three_layer_one_memory',
+                                   'sirs_three_layer_incidence_one_memory',
+                                   'sirs_three_layer_two_memory',
+                                   'sirs_three_layer_incidence_two_memory'
                                    ], f"Specified model type {self.model_type} is not valid."
 
         self.r0 = r0 if model_params is None else model_params.get('r0', 1.)
@@ -40,10 +49,13 @@ class SIRSModels:
         self.theta = theta if model_params is None else model_params.get('theta', 0.)
         self.a1 = a1 if model_params is None else model_params.get('a1', 0.)
         self.a2 = a2 if model_params is None else model_params.get('a2', 0.)
+        self.a3 = a3 if model_params is None else model_params.get('a3', 0.)
         self.k1 = k1 if model_params is None else model_params.get('k1', 1.)
         self.k2 = k2 if model_params is None else model_params.get('k2', 1.)
+        self.k3 = k3 if model_params is None else model_params.get('k3', 1.)
         self.alpha1 = alpha1 if model_params is None else model_params.get('alpha1', 1.)
         self.alpha2 = alpha2 if model_params is None else model_params.get('alpha2', 1.)
+        self.alpha3 = alpha3 if model_params is None else model_params.get('alpha3', 1.)
         self.delta = delta if model_params is None else model_params.get('delta', 0.)
         self.omega = omega if model_params is None else model_params.get('omega', 2 * np.pi / 365)
 
@@ -54,10 +66,13 @@ class SIRSModels:
         assert isinstance(self.theta, (int, float)), "Theta provided should be set for SIRS model."
         assert isinstance(self.a1, (int, float)), "A1 provided should be set for SIRS model."
         assert isinstance(self.a2, (int, float)), "A2 provided should be set for SIRS model."
+        assert isinstance(self.a3, (int, float)), "A2 provided should be set for SIRS model."
         assert isinstance(self.k1, (int, float)), "K1 provided should be set for SIRS model."
         assert isinstance(self.k2, (int, float)), "K2 provided should be set for SIRS model."
+        assert isinstance(self.k3, (int, float)), "K2 provided should be set for SIRS model."
         assert isinstance(self.alpha1, (int, float)), "Alpha1 provided should be set for SIRS model."
         assert isinstance(self.alpha2, (int, float)), "Alpha2 provided should be set for SIRS model."
+        assert isinstance(self.alpha3, (int, float)), "Alpha2 provided should be set for SIRS model."
         assert isinstance(self.delta, (int, float)), "Delta provided should be set for SIRS model."
         assert isinstance(self.omega, (int, float)), "Omega provided should be set for SIRS model."
 
@@ -66,6 +81,7 @@ class SIRSModels:
                                       beta_zero=self.beta_zero,
                                       alpha1=self.alpha1,
                                       alpha2= self.alpha2,
+                                      alpha3=self.alpha3,
                                       delta=self.delta,
                                       omega=self.omega).set_beta_function()
         self.model = self.set_model()
@@ -81,7 +97,13 @@ class SIRSModels:
             'sirs_two_layer':                       self.sirs_two_layer,
             'sirs_two_layer_incidence':             self.sirs_two_layer_incidence,
             'sirs_two_layer_one_memory':            self.sirs_two_layer_one_memory,
-            'sirs_two_layer_incidence_one_memory':  self.sirs_two_layer_incidence_one_memory
+            'sirs_two_layer_incidence_one_memory':  self.sirs_two_layer_incidence_one_memory,
+            'sirs_three_layer':                     self.sirs_three_layer,
+            'sirs_three_layer_incidence':          self.sirs_three_layer_incidence,
+            'sirs_three_layer_one_memory':          self.sirs_three_layer_one_memory,
+            'sirs_three_layer_incidence_one_memory':self.sirs_three_layer_incidence_one_memory,
+            'sirs_three_layer_two_memory':          self.sirs_three_layer_two_memory,
+            'sirs_three_layer_incidence_two_memory':self.sirs_three_layer_incidence_two_memory
         }
         return models[self.model_type]
 
@@ -137,6 +159,20 @@ class SIRSModels:
         return [dI, dR, dM1, dM2]
 
 
+    def sirs_three_layer(self, t, X):
+        I, R, M1, M2, M3 = X
+
+        beta_value = self.beta(t, M1, M2, M3)
+
+        dI = I * (beta_value * (1. - I - R) - (self.mu + self.gamma))
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (I - M1)
+        dM2 = self.a2 * (M1 - M2)
+        dM3 = self.a3 * (M2 - M3)
+
+        return [dI, dR, dM1, dM2, dM3]
+
+
     def sirs_zero_layer_incidence(self, t, X):
         I, R, M = X
 
@@ -177,6 +213,21 @@ class SIRSModels:
         return [dI, dR, dM1, dM2]
 
 
+    def sirs_three_layer_incidence(self, t, X):
+        I, R, M1, M2, M3 = X
+
+        beta_value = self.beta(t, M1, M2, M3)
+        incidence = beta_value * I * (1. - R - I)
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        dM3 = self.a3 * (M2 - M3)
+
+        return [dI, dR, dM1, dM2, dM3]
+
+
     def sirs_two_layer_one_memory(self, t, X):
         I, R, M1, M2 = X
 
@@ -205,24 +256,86 @@ class SIRSModels:
         return [dI, dR, dM1, dM2]
 
 
+    def sirs_three_layer_one_memory(self, t, X):
+        I, R, M1, M2, M3 = X
+
+        beta_value = self.beta(t, M3)
+        incidence = beta_value * I * (1. - R - I)
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        dM3 = self.a3 * (M2 - M3)
+
+        return [dI, dR, dM1, dM2, dM3]
+
+
+    def sirs_three_layer_incidence_one_memory(self, t, X):
+        I, R, M1, M2, M3 = X
+
+        beta_value = self.beta(t, M3)
+        incidence = beta_value * I * (1. - R - I)
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        dM3 = self.a3 * (M2 - M3)
+
+        return [dI, dR, dM1, dM2, dM3]
+
+
+    def sirs_three_layer_two_memory(self, t, X):
+        I, R, M1, M2, M3 = X
+
+        beta_value = self.beta(t, M2, M3)
+        incidence = beta_value * I * (1. - R - I)
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        dM3 = self.a3 * (M2 - M3)
+
+        return [dI, dR, dM1, dM2, dM3]
+
+
+    def sirs_three_layer_incidence_two_memory(self, t, X):
+        I, R, M1, M2, M3 = X
+
+        beta_value = self.beta(t, M2, M3)
+        incidence = beta_value * I * (1. - R - I)
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM1 = self.a1 * (incidence - M1)
+        dM2 = self.a2 * (M1 - M2)
+        dM3 = self.a3 * (M2 - M3)
+
+        return [dI, dR, dM1, dM2, dM3]
+
+
 
 if __name__ == '__main__':
-    # noinspection PyArgumentEqualDefault
     model = SIRSModels(
-        model_type='sirs_two_layer_incidence',
+        model_type='sirs_three_layer_incidence',
         r0 = 2,
         mu= 1 / 80 / 365,
         theta= 1 / 365,
         gamma= 1 / 14,
         a1 = 1,
         a2 = 1,
+        a3 = 1,
         k1 = 1,
         k2 = 1,
+        k3 = 0.99,
         alpha1 = 1,
         alpha2 = 1,
+        alpha3 = 1,
         delta = 4,
         omega = 2 * np.pi / 365
     )
 
-    result = model.model(t=5, X=[0.3, 0.1, 0.11, 12])
+    result = model.model(t=5, X=[0.3, 0.1, 0., 0., 0.])
     print(result)

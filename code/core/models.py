@@ -35,19 +35,22 @@ class SIRS:
             self._override_params(**kwargs)
 
         self._physics = SIRSModels(
-            model_type=self.model_type,
-            r0=self.r0,
-            gamma=self.gamma,
-            mu=self.mu,
-            theta=self.theta,
-            a1=self.a1,
-            a2=self.a2,
-            k1=self.k1,
+            model_type = self.model_type,
+            r0 = self.r0,
+            gamma = self.gamma,
+            mu = self.mu,
+            theta = self.theta,
+            a1 = self.a1,
+            a2 = self.a2,
+            a3 = self.a3,
+            k1 = self.k1,
             k2 = self.k2,
+            k3 = self.k3,
             alpha1 = self.alpha1,
             alpha2 = self.alpha2,
-            delta=self.delta,
-            omega=self.omega )
+            alpha3 = self.alpha3,
+            delta = self.delta,
+            omega = self.omega )
 
         self.model = getattr(self._physics, self.model_type)
 
@@ -60,10 +63,13 @@ class SIRS:
         self.theta : float = model_params.get('theta', 0.)
         self.a1 : float = model_params.get('a1', 0.)
         self.a2 : float = model_params.get('a2', 0.)
+        self.a3 : float = model_params.get('a3', 0.)
         self.k1 : float = model_params.get('k1', 1.)
         self.k2 : float = model_params.get('k2', 1.)
+        self.k3 : float = model_params.get('k3', 1.)
         self.alpha1 : float = model_params.get('alpha1', 1.)
         self.alpha2 : float = model_params.get('alpha2', 1.)
+        self.alpha3 : float = model_params.get('alpha3', 1.)
         self.delta : float = model_params.get('delta', 0)
         self.omega : float = model_params.get('omega', 2 * np.pi / 365)
 
@@ -87,10 +93,13 @@ class SIRS:
         self.theta : float = config.get('theta', 0.)
         self.a1 : float = config.get('a1', 0.)
         self.a2 : float = config.get('a2', 0.)
+        self.a3 : float = config.get('a3', 0.)
         self.k1 : float = config.get('k1', 1.)
         self.k2 : float = config.get('k2', 1.)
+        self.k3 : float = config.get('k3', 1.)
         self.alpha1 : float = config.get('alpha1', 1.)
         self.alpha2 : float = config.get('alpha2', 1.)
+        self.alpha3 : float = config.get('alpha3', 1.)
         self.delta : float = config.get('delta', 0)
         self.omega : float = config.get('omega', 2 * np.pi / 365)
 
@@ -118,6 +127,7 @@ class SIRS:
                     r : float,
                     m1 : float | None = None,
                     m2 : float | None = None,
+                    m3 : float | None = None,
                     method : str | None = 'RK45'):
         """
             Internal method to solve the ODEs based on the model type and parameters.
@@ -136,7 +146,7 @@ class SIRS:
             - m2: float, optional
                 Initial condition for the second memory layer (if applicable).
         """
-        variables = [i, r] + ( [m1] if m1 is not None else [] ) + ( [m2] if m2 is not None else [] )
+        variables = [i, r] + ( [m1] if m1 is not None else [] ) + ( [m2] if m2 is not None else [] ) + ( [m3] if m3 is not None else [] )
         solution = solve_ivp(self.model, t_span, variables, dense_output=True, method=method)
         return solution
 
@@ -163,8 +173,11 @@ class SIRS:
 
         M1 = solution[2] if len(solution) > 2 else None
         M2 = solution[3] if len(solution) > 3 else None
+        M3 = solution[4] if len(solution) > 4 else None
 
-        if M1 is not None and M2 is not None:
+        if M1 is not None and M2 is not None and M3 is not None:
+            incidence = [self._physics.beta(0, m1, m2, m3) * (1 - r - i) * i for i, r, m1, m2, m3 in zip(I, R, M1, M2, M3)]
+        elif M1 is not None and M2 is not None:
             incidence = [self._physics.beta(0, m1, m2) * (1 - r - i) * i for i, r, m1, m2 in zip(I, R, M1, M2)]
         elif M1 is not None:
             incidence = [self._physics.beta(0, m1) * (1 - r - i) * i for i, r, m1 in zip(I, R, M1)]
@@ -177,8 +190,7 @@ class SIRS:
         return cumulative_incidence
 
 
-    def \
-            simulate(self, t_span: list, initial_conditions: list, n_points : int):
+    def simulate(self, t_span: list, initial_conditions: list, n_points : int):
         """
         Simulate the SIRS model over the given time span and initial conditions.
 
@@ -197,15 +209,18 @@ class SIRS:
             assert len(initial_conditions) == 3, "Expected 3 initial conditions for this model."
         elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence', 'sirs_two_layers_one_memory', 'sirs_two_layers_one_memory_incidence']:
             assert len(initial_conditions) == 4, "Expected 4 initial conditions for this model."
+        elif self.model_type in ['sirs_three_layer', 'sirs_three_layer_incidence,', 'sirs_three_layer_one_memory', 'sirs_three_layer_incidence_one_memory', 'sirs_three_layer_two_memory', 'sirs_three_layer_incidence_two_memory']:
+            assert len(initial_conditions) == 5, "Expected 5 initial conditions for this model."
 
         t = np.linspace(t_span[0], t_span[1], num=n_points)
 
         i = initial_conditions[0]
         r = initial_conditions[1]
         m1 = initial_conditions[2] if len(initial_conditions) >= 3 else None
-        m2 = initial_conditions[3] if len(initial_conditions) == 4 else None
+        m2 = initial_conditions[3] if len(initial_conditions) >= 4 else None
+        m3 = initial_conditions[4] if len(initial_conditions) == 5 else None
 
-        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2)
+        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2, m3=m3)
         return solution.sol(t)
 
 
@@ -225,17 +240,20 @@ class SIRS:
 
 if __name__ == "__main__":
     params = {
-        'model_type': 'sirs_one_layer',
+        'model_type': 'sirs_three_layer',
         'r0': 2.5,
         'gamma': 1/7,
         'mu': 1/80/365,
         'theta': 1/365,
-        'a1': 0.5,
-        'a2': 0.5,
+        'a1': 1/15,
+        'a2': 1/90,
+        'a3' : 1/365/10,
         'k1': 1.,
         'k2': 1.,
+        'k3' : 1.,
         'alpha1': 1.,
         'alpha2': 1.,
+        'alpha3' : 0.,
         'delta': 0.,
         'omega': 0.
     }

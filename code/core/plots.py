@@ -5,7 +5,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from code.core.old.models import *
+from code.core.models import *
 
 """
 The aim of this file is to provide the utils methods used by simulations.py and in jupyter file 'simulations.ipynb' to study the different dynamics of several behavioural SIRS models.
@@ -86,19 +86,19 @@ class Plots:
                 if mu is not None:
                     params_text += f", mu={mu}"
                 if gamma is not None:
-                    params_text += f", k={gamma}"
+                    params_text += f", gamma={gamma}"
                 if a1 is not None:
                     params_text += f", a1={a1}"
                 if a2 is not None:
                     params_text += f", a2={a2}"
                 if k1 is not None:
-                    params_text += f", k={k1}"
+                    params_text += f", k1={k1}"
                 if k2 is not None:
-                    params_text += f", k={k2}"
+                    params_text += f", k2={k2}"
                 if delta is not None:
-                    params_text += f", k={delta}"
+                    params_text += f", delta={delta}"
                 if omega is not None:
-                    params_text += f", k={omega}"
+                    params_text += f", omega={omega}"
 
                 ax.text(0.5, -0.15, params_text, ha='center', va='center', transform=ax.transAxes)
 
@@ -156,7 +156,7 @@ class Plots:
 
         for ts in solution:
             try:
-                plt.plot(t, ts[: n_points])
+                plt.plot(t, ts)
             except IndexError:
                 plt.plot(t, solution)
 
