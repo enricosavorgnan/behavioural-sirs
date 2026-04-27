@@ -15,22 +15,20 @@ mu : !expr 1/365/80
 gamma : !expr 1/14
 a1 : !expr 1/15
 a2 : !expr 1/90
-a3 : !expr 1/10/365
 k1 : 1.
 k2 : 1.
 alpha1 : 50.
 alpha2 : 50.
-alpha3 : 50.
 
 delta : 0.
 omega : 0.
 
 t_span : [0, 10000]
-initial_conditions : [0.001, 0., 0., 0., 0. ]
+initial_conditions : [0.001, 0., 0., 0.]
 
 
 target : 'a1'
-target_span : [0, 0.0001]
+target_span : [0, 1]
 target_n_points : 100
 
 # Plotting parameters

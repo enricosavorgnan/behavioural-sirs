@@ -19,6 +19,48 @@ class RH:
     def _get_beta(self):
         pass
 
+    def _define_functions(self):
+        pass
+
+
+
+class RH_ThirdOrder(RH):
+    def __init__(self, model: SIRS, target: str = 'a1', equilibrium=None):
+        super().__init__(target, equilibrium, model)
+
+        assert self.target in ['a1'], f"Currently the condition for target {self.target} is not available"
+        assert len(self.equilibrium) == 3, f"The equilibrium should have length 3. Received {len(self.equilibrium)}"
+
+        self.i = self.equilibrium[0]
+        self.r = self.equilibrium[1]
+        self.m = self.equilibrium[2]
+        self.beta = self._get_beta()
+        self.dot_beta = self._get_dot_beta()
+
+        self._define_functions()
+
+
+    def _get_beta(self):
+        beta_func = self.model._physics.beta
+        return beta_func(t=0., X=self.m)
+
+
+    def _get_dot_beta(self):
+        return - self.model.alpha1 / (1 + self.model.alpha1 * self.m) * self.model._physics.beta(t=0., X1=self.m)
+
+
+    def _define_functions(self):
+        pass
+
+
+    def compute(self, x : float | int = 0.):
+        """
+        Computes the Routh Hurwitz condition for 3rd-order polynomials
+        """
+        pass
+
+
+
 
 class RH_ForthOrder(RH):
 
@@ -26,17 +68,59 @@ class RH_ForthOrder(RH):
         super().__init__(target, equilibrium, model)
 
         assert self.target in ['a1'], f"Currently the condition for target {self.target} is not available"
-        assert len(self.equilibrium) == 5, f"The equilibrium should have length 5. Received {len(self.equilibrium)}"
+        assert len(self.equilibrium) == 4, f"The equilibrium should have length 5. Received {len(self.equilibrium)}"
 
+        self.non_target = self.model.a2 if self.target == 'a1' else self.model.a1
         self.i = self.equilibrium[0]
         self.r = self.equilibrium[1]
+        self.s = 1 - self.i - self.r
         self.m1 = self.equilibrium[2]
         self.m2 = self.equilibrium[3]
-        self.m3 = self.equilibrium[4]
         self.beta = self._get_beta()
+        self.dot_beta = self._get_dot_beta()
+
+        self._define_functions()
+
 
     def _get_beta(self):
-        pass
+        beta_func = self.model._physics.beta
+
+        if self.model.model_type in ['sirs_two_layer_one_memory', 'sirs_two_layer_incidence_one_memory']:
+            return beta_func(t=0., X=self.m2)
+        elif self.model.model_type in ['sirs_two_layer']:
+            return beta_func(t=0., X1=self.m1, X2=self.m2)
+        return None
+
+
+    def _get_dot_beta(self):
+        return - self.model.alpha2 / (1 + self.model.alpha2 * self.m2) * self.model._physics.beta(t=0., X1=self.m2, X2=self.m1)
+
+
+    def _define_functions(self):
+        self._X = lambda x: x * self.non_target
+        self._Y = lambda x: x + self.non_target
+        self._A = self.beta * self.i + self.model.mu + self.model.theta
+        self._B = self.beta * self.i * (self.model.mu + self.model.theta + self.model.gamma)
+        self._C = self.beta * self.s + self.model.mu + self.model.theta
+        self._D = self.beta * self.s * (self.model.mu + self.model.theta)
+        self._E = - self.model.k1 * self.i * self.s * self.dot_beta
+
+        self._q0 = lambda x: self._X * (self._B + self._D * self._E)
+        self._q1 = lambda x: self._B * self._Y + self._A * self._X + self._X * self._C * self._E
+        self._q2 = lambda x: self._X * self._E + self._X + self._B + self._A * self._Y
+        self._q3 = lambda x: self._A + self._Y
+
+        self.condition1 = lambda x: self._q3 * self._q2 - self._q1
+        self.condition2 = lambda x: self._q3 * self._q2 * self._q1 - self._q1 **2 - self._q0 * self._q3 **2
+
+
+    def compute(self, x : float | int = 0.):
+        """
+        Computes the two Routh Hurwitz conditions for 4th-order polynomials
+        """
+        return self.condition1(x), self.condition2(x)
+
+
 
 
 class RH_FifthOrder(RH):
@@ -56,6 +140,7 @@ class RH_FifthOrder(RH):
         self.dot_beta = self._get_dot_beta()
 
         self._define_functions()
+
 
     def _define_functions(self):
         if self.model.model_type in ['sirs_three_layer', 'sirs_three_layer_incidence']:

@@ -9,7 +9,7 @@ import numpy as np
 import yaml
 
 from code.core.models import SIRS
-from code.core.maths import RH_FifthOrder
+from code.core.maths import RH_FifthOrder, RH_ForthOrder, RH_ThirdOrder
 from code.core.plots import Plots
 from code.core.utils import expr
 import matplotlib.pyplot as plt
@@ -626,13 +626,78 @@ class Simulations:
         # TODO: Routh-Hurwitz stability for 2nd order polynomial
         return None
 
+
     def simulation_14(self, config_path : str) -> plt.Figure | None:
-        # TODO: Routh-Hurwitz stability for 3rd order polynomial
-        return None
+        """
+        Simulation 14: Routh-Hurwitz stability for 4th order polynomial
+        """
+        config = self._load_yaml(config_path=config_path)
+
+        t_span = config.get('t_span', [0, 20000])
+        n_points = config.get('n_points', 20000)
+
+        target = config.get('target', 'a1')
+        assert target in ['a1'], f"Unknown target: {target}"
+        target_span = config.get('target_span', [0, 1])
+        target_n_points = config.get('target_n_points', 10)
+        initial_conditions = config.get('initial_conditions', [0.999, 0.001, 0.])
+
+        targets = np.linspace(target_span[0], target_span[1], target_n_points)
+        rh_cond_s = []
+        for targ in targets:
+            params = {target: targ}
+            model = SIRS(config_path=config_path, **params)
+            solution = model.simulate(t_span=t_span, n_points=n_points, initial_conditions=initial_conditions)
+            equilibrium = [solution[0][-1], solution[1][-1], solution[2][-1], solution[3][-1], solution[4][-1]]
+            rh_cond = RH_ThirdOrder(target=target, equilibrium=equilibrium, model=model).compute(x=targ)
+            rh_cond_s.append(rh_cond)
+
+        rhs = np.array(rh_cond_s)
+
+        params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='14')}
+        fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
+                    show_params = config.get('show_params', False),
+                    show_title = config.get('show_title', False),
+                    save_figures = True).plot_simulation(solution=rhs, t_span=target_span, n_points=target_n_points, **params)
+        return fig
+
 
     def simulation_15(self, config_path : str) -> plt.Figure | None:
-        # TODO: Routh-Hurwitz stability for 4th order polynomial
-        return None
+        """
+        Simulation 15: Routh-Hurwitz stability for 5th order polynomial
+        """
+        config = self._load_yaml(config_path=config_path)
+
+        t_span = config.get('t_span', [0, 20000])
+        n_points = config.get('n_points', 20000)
+
+        target = config.get('target', 'a1')
+        assert target in ['a1', 'a2'], f"Unknown target: {target}"
+        target_span = config.get('target_span', [0, 1])
+        target_n_points = config.get('target_n_points', 10)
+        initial_conditions = config.get('initial_conditions', [0.999, 0.001, 0.])
+
+        targets = np.linspace(target_span[0], target_span[1], target_n_points)
+        rh_cond1_s, rh_cond2_s = [], []
+        for targ in targets:
+            params = {target: targ}
+            model = SIRS(config_path=config_path, **params)
+            solution = model.simulate(t_span=t_span, n_points=n_points, initial_conditions=initial_conditions)
+            equilibrium = [solution[0][-1], solution[1][-1], solution[2][-1], solution[3][-1], solution[4][-1]]
+            rh_cond_1, rh_cond_2 = RH_ForthOrder(target=target, equilibrium=equilibrium, model=model).compute(x=targ)
+            rh_cond1_s.append(rh_cond_1)
+            rh_cond2_s.append(rh_cond_2)
+
+        rhs = np.array([rh_cond1_s, rh_cond2_s])
+        # rhs = np.array([rh_cond2_s])
+
+        params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='15')}
+        fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
+                    show_params = config.get('show_params', False),
+                    show_title = config.get('show_title', False),
+                    save_figures = True).plot_simulation(solution=rhs, t_span=target_span, n_points=target_n_points, **params)
+        return fig
+
 
     def simulation_16(self, config_path : str) -> plt.Figure | None:
         """
@@ -660,8 +725,8 @@ class Simulations:
             rh_cond1_s.append(rh_cond_1)
             rh_cond2_s.append(rh_cond_2)
 
-        rhs = np.array([rh_cond1_s, rh_cond2_s])
-        # rhs = np.array([rh_cond2_s])
+        # rhs = np.array([rh_cond1_s, rh_cond2_s])
+        rhs = np.array([rh_cond2_s])
 
         params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='16')}
         fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
