@@ -7,24 +7,25 @@ simulation_name : "Simulation 0: JASM: Just Another Sirs Model"
 
 # Model parameters
 
-model_type: 'sirs'
+model_type: 'sirs_two_layer_one_memory'
 
 r0 : 2.5
 theta : !expr 1/365
 mu : !expr 1/365/80
 gamma : !expr 1/14
-a1 : 0.033
-a2 : 0.012
+a1 : !expr 1/50000
+a2 : !expr 1/365
 k1 : 1.
 k2 : 1.
-alpha1 : 1.
-alpha2 : 1.
+alpha1 : 500.
+alpha2 : 500.
 
 delta : 0.
 omega : 0.
 
-t_span : [0, 10000]
-initial_conditions : [0.01, 0. ]
+t_span : [0, 20000001]
+n_points : 20000000
+initial_conditions : [0.001, 0., 0., 0. ]
 
 
 
@@ -35,4 +36,4 @@ show_params : False
 show_title : False
 
 plot_together : True
-plot_t_span : [0, 1250]
+plot_t_span : [0, 2000000]

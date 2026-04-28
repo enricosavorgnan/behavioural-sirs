@@ -1,13 +1,13 @@
-# Configuration File for SIMULATION 15
+# Configuration File for SIMULATION 14
 
 simulation_n : 0
-simulation_name : "Simulation 15: RH5"
+simulation_name : "Simulation 14: RH3"
 
 
 
 # Model parameters
 
-model_type: 'sirs_three_layer_one_memory'
+model_type: 'sirs_one_layer'
 
 r0 : 2.
 theta : !expr 1/365
@@ -15,26 +15,21 @@ mu : !expr 1/365/80
 gamma : !expr 1/14
 a1 : !expr 1/15
 a2 : !expr 1/90
-a3 : !expr 1/10/365
 k1 : 1.
 k2 : 1.
 alpha1 : 50.
 alpha2 : 50.
-alpha3 : 50.
 
 delta : 0.
 omega : 0.
 
 t_span : [0, 10000]
-initial_conditions : [0.001, 0., 0., 0., 0. ]
+initial_conditions : [0.001, 0., 0.]
 
 
 target : 'a1'
-target_span : [0, 0.0001]
+target_span : [0, 1]
 target_n_points : 100
-
-
-
 
 # Plotting parameters
 

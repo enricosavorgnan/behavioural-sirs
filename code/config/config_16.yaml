@@ -1,43 +1,35 @@
 # Configuration File for SIMULATION 16
 
 simulation_n : 0
-simulation_name : "Simulation 16: RH5"
+simulation_name : "Simulation 16: RH4 - plot a1, a2"
 
 
 
 # Model parameters
 
-model_type: 'sirs_three_layer'
+model_type: 'sirs_two_layer_one_memory'
 
-r0 : 2.
+r0 : 1.05
 theta : !expr 1/365
-mu : !expr 1/365/80
-gamma : !expr 1/14
-a1 : !expr 1/15
-a2 : !expr 1/90
-a3 : !expr 1/10/365
+mu : !expr 1/365/50
+gamma : !expr 1/7
 k1 : 1.
 k2 : 1.
-alpha1 : 50.
-alpha2 : 50.
-alpha3 : 50.
+alpha1 : 1.
+alpha2 : 1.
 
 delta : 0.
 omega : 0.
 
-t_span : [0, 10000]
-initial_conditions : [0.001, 0., 0., 0., 0. ]
+t_span : [0, 20000]
+initial_conditions : [0.001, 0., 0., 0.]
 
-
-target : 'a1'
-target_span : [0, 0.0001]
-target_n_points : 100
+target_span : [0, !expr 5]
+target_n_points : 5
 
 # Plotting parameters
 
 show_cumulative_incidence : False
 show_params : False
 show_title : False
-
-plot_together : False
-plot_t_span : [0, 1250]
+show_legend : True

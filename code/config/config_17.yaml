@@ -1,7 +1,7 @@
-# Configuration File for SIMULATION 15
+# Configuration File for SIMULATION 17
 
 simulation_n : 0
-simulation_name : "Simulation 15: RH5"
+simulation_name : "Simulation 17: RH5 - plot a1, a2, a3"
 
 
 
@@ -18,9 +18,9 @@ a2 : !expr 1/90
 a3 : !expr 1/10/365
 k1 : 1.
 k2 : 1.
-alpha1 : 50.
-alpha2 : 50.
-alpha3 : 50.
+alpha1 : 1.
+alpha2 : 1.
+alpha3 : 1.
 
 delta : 0.
 omega : 0.
