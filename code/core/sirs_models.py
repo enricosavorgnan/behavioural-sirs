@@ -99,7 +99,7 @@ class SIRSModels:
             'sirs_two_layer_one_memory':            self.sirs_two_layer_one_memory,
             'sirs_two_layer_incidence_one_memory':  self.sirs_two_layer_incidence_one_memory,
             'sirs_three_layer':                     self.sirs_three_layer,
-            'sirs_three_layer_incidence':          self.sirs_three_layer_incidence,
+            'sirs_three_layer_incidence':           self.sirs_three_layer_incidence,
             'sirs_three_layer_one_memory':          self.sirs_three_layer_one_memory,
             'sirs_three_layer_incidence_one_memory':self.sirs_three_layer_incidence_one_memory,
             'sirs_three_layer_two_memory':          self.sirs_three_layer_two_memory,
@@ -264,7 +264,7 @@ class SIRSModels:
 
         dI = incidence - I * (self.mu + self.gamma)
         dR = self.gamma * I - (self.mu + self.theta) * R
-        dM1 = self.a1 * (incidence - M1)
+        dM1 = self.a1 * (I - M1)
         dM2 = self.a2 * (M1 - M2)
         dM3 = self.a3 * (M2 - M3)
 
