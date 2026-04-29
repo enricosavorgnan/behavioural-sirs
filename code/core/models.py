@@ -10,6 +10,7 @@ import numpy as np
 import yaml
 from code.core.utils import expr
 from scipy.integrate import solve_ivp
+from scipy.optimize import fsolve
 
 from code.core.sirs_models import SIRSModels
 
@@ -188,6 +189,34 @@ class SIRS:
         cumulative_incidence = np.trapezoid(incidence, t)
 
         return cumulative_incidence
+
+
+    def find_equilibrium(self, initial_guess: list, t: float = 0.) -> np.ndarray:
+        """
+        Finds the exact mathematical equilibrium of the system using scipy.optimize.fsolve.
+
+        Parameters
+        ----------
+        initial_guess : list
+            A rough guess for the equilibrium state.
+            For best results, use the theoretical endemic equilibrium of the
+            standard SIR model as the base guess.
+        t : float, optional
+            The time at which to evaluate the model for finding the equilibrium.
+            If None, the model will be evaluated at t=0.
+        Returns
+        -------
+        np.ndarray
+            The exact steady-state state variables [I*, R*, M1*, ...].
+        """
+        ode_func = lambda x: self.model(t, x)
+
+        equilibrium, info, ier, mesg = fsolve(ode_func, initial_guess, full_output=True)
+
+        if ier != 1:
+            print(f"Warning: fsolve did not converge. Reason: {mesg}")
+
+        return equilibrium
 
 
     def simulate(self, t_span: list, initial_conditions: list, n_points : int):
