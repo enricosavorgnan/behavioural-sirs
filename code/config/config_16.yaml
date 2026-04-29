@@ -7,7 +7,7 @@ simulation_name : "Simulation 16: RH4 - plot a1, a2"
 
 # Model parameters
 
-model_type: 'sirs_two_layer_one_memory'
+model_type: 'sirs_two_layer_incidence_one_memory'
 
 r0 : 1.05
 theta : !expr 1/365

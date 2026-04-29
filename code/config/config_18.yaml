@@ -1,7 +1,8 @@
-# Configuration File for SIMULATION 17
+# Configuration File for SIMULATION 18
+# Same as SIMULATION 17!
 
 simulation_n : 17
-simulation_name : "Simulation 17: RH5 - plot a1, a2, a3"
+simulation_name : "Simulation 18: RH5 - plot a1, a2, a3"
 
 
 
@@ -31,7 +32,7 @@ initial_conditions : [0.001, 0., 0., 0., 0. ]
 
 target : 'a1'
 target_span : [0, 0.1]
-target_n_points : 10
+target_n_points : 100
 
 
 
