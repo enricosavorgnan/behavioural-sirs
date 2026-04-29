@@ -2,6 +2,9 @@
 Some mathematical tools for the SIRS stability
 """
 import numpy as np
+from _pytest import pytester_assertions
+from sphinx.ext.todo import Todo
+
 from code.core.models import SIRS
 
 class RH:
@@ -255,6 +258,76 @@ class RH_FifthOrder(RH):
                 print(f"q0: {round(self._q0(x,y,z), 12)}\t\t\t\t\tq1: {round(self._q1(x,y,z), 12)}\t\t\tq2: {round(self._q2(x,y,z), 12)}\t\t\t3: {round(self._q3(x,y,z), 12)}\t\t\tq4: {round(self._q4(x,y,z), 12)}")
                 print(f"Cond1: {round(self.condition1(x,y,z), 8)}\t\t\tCond2: {self.condition2(x,y,z)}\n\n")
             return self.condition1(x, y,z), self.condition2(x, y,z)
+
+
+
+
+class DelayStability:
+
+    def __init__(self, model: SIRS, equilibrium: list | np.ndarray):
+        self.model = model
+        self.equilibrium = np.array(equilibrium, dtype=float)
+
+        self.i = self.equilibrium[0]
+        self.r = self.equilibrium[1]
+        self.m = self.equilibrium[2]
+        self.beta = self._get_beta()
+        self.dot_beta = self._get_dot_beta()
+
+
+    def _get_beta(self):
+        pass
+
+
+    def _get_dot_beta(self):
+        pass
+
+
+    def _define_functions(self):
+        self._A = self.model.beta * self.i + self.model.mu + self.model.theta
+        self._B = self.model.beta * self.model.i * (self.model.mu + self.model.theta + self.model.gamma)
+        self._C = self.model.beta * self.s + self.model.mu + self.model.theta
+        self._D = self.model.beta * self.s * (self.model.mu + self.model.theta)
+        self._E = - self.i * self.s * self.dot_beta
+
+        self._J = self._A + self._E / self.model.T
+        self._K = self._B + self._C * self._E / self.model.T
+        self._L = self._D * self._E / self.model.T
+
+        self._poliA = lambda x: x**6 + x**4 * (self._J **2 - 2* self._K)+ x**2 * (self._K - 2 * self._J * self._L) + self._L**2
+        self._poliB = lambda x: x**4 * (self._J - self._A)**2 + x**2 * (self._K - self._B)**2 + self._L**2
+
+
+    def _compute_frequency(self):
+        """
+        Solve equation for omega:
+        omega^4 + omega^2 (2AJ - A^2 - 2K) + (2KB - B^2 - 2LA) = 0
+        """
+        pass
+
+
+    def _compute_period(self, omega:float | int):
+        """
+        Solve equation for T
+        T = 1 / omega * ( arg( A(omega)/B(omega) )  + 2n / pi ) - pi / omega
+        """
+        periods = []
+        for n in range(0, 10):
+            period = 1 / omega * (np.angle(self._poliA(omega) / self._poliB(omega)) + 2 * np.pi * n) - np.pi / omega
+            periods.append(period)
+        return periods
+
+
+    def compute(self):
+        """
+        Computes the stability condition for delay differential equations using the characteristic equation.
+        This is a placeholder for the actual implementation, which would involve solving the characteristic equation
+        derived from the linearization of the DDE at the equilibrium point.
+        """
+        freqs = self._compute_frequency()
+        periods = [self._compute_period(omega=freq) for freq in freqs if freq > 0]
+
+        return freqs, periods
 
 
 
