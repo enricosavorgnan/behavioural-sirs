@@ -1,6 +1,7 @@
 """
 Some mathematical tools for the SIRS stability
 """
+import numpy as np
 from code.core.models import SIRS
 
 class RH:
@@ -254,3 +255,62 @@ class RH_FifthOrder(RH):
                 print(f"q0: {round(self._q0(x,y,z), 12)}\t\t\t\t\tq1: {round(self._q1(x,y,z), 12)}\t\t\tq2: {round(self._q2(x,y,z), 12)}\t\t\t3: {round(self._q3(x,y,z), 12)}\t\t\tq4: {round(self._q4(x,y,z), 12)}")
                 print(f"Cond1: {round(self.condition1(x,y,z), 8)}\t\t\tCond2: {self.condition2(x,y,z)}\n\n")
             return self.condition1(x, y,z), self.condition2(x, y,z)
+
+
+
+class EigenStability:
+    """
+    Universal stability calculator for any generic SIRS compartmental model.
+    Computes the exact Jacobian numerically and extracts the maximum real eigenvalue.
+    """
+
+    def __init__(self, model: SIRS, equilibrium: list | np.ndarray):
+        self.model = model
+        self.equilibrium = np.array(equilibrium, dtype=float)
+
+
+    def _compute_numerical_jacobian(self) -> np.ndarray:
+        """
+        Numerically computes the Jacobian matrix at the equilibrium using finite differences.
+        """
+        n = len(self.equilibrium)
+        jacobian = np.zeros((n, n))
+        epsilon = 1e-8  # Finite difference step size
+
+        # Define the system derivative f(X)
+        ode_func = lambda X: np.array(self.model.model(0.0, X))
+
+        # Base evaluation at equilibrium (should be very close to [0, 0, ...])
+        f0 = ode_func(self.equilibrium)
+
+        # Perturb each variable slightly to find the partial derivatives
+        for i in range(n):
+            X_eps = np.copy(self.equilibrium)
+            X_eps[i] += epsilon
+            f_eps = ode_func(X_eps)
+
+            # Forward difference approximation for the i-th column
+            jacobian[:, i] = (f_eps - f0) / epsilon
+
+        return jacobian
+
+
+    def get_eigenvalues(self) -> np.ndarray:
+        """
+        Extracts the exact eigenvalues of the Jacobian matrix.
+        """
+        jacobian = self._compute_numerical_jacobian()
+        eigenvalues = np.linalg.eigvals(jacobian)
+        return eigenvalues
+
+
+    def compute(self) -> float:
+        """
+        Returns the maximum real part of the eigenvalues.
+
+        - If max_real < 0: The system is Locally Asymptotically Stable (LAS)
+        - If max_real > 0: The system is Unstable (Hopf Bifurcation or Saddle)
+        """
+        eigenvalues = self.get_eigenvalues()
+        max_real = np.max(np.real(eigenvalues))
+        return max_real
