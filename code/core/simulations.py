@@ -7,13 +7,16 @@ Provides simulation methods used in the thesis and in the jupyter file `simulati
 """
 import numpy as np
 import yaml
+import datetime
+import matplotlib.pyplot as plt
 
 from code.core.models import SIRS
+
 from code.core.maths import RH_FifthOrder, RH_ForthOrder, RH_ThirdOrder
+from code.core.maths import EigenStability
+
 from code.core.plots import Plots
 from code.core.utils import expr
-import matplotlib.pyplot as plt
-import datetime
 
 
 
@@ -808,7 +811,7 @@ class Simulations:
                     equilibrium = [solution[0][-1], solution[1][-1], solution[2][-1], solution[3][-1], solution[4][-1]]
                     _, rh_cond_2 = RH_FifthOrder(target=['a1', 'a2', 'a3'], equilibrium=equilibrium, model=model).compute(x=targ1, y=targ2, z=targ3, **{'verbose': False})
                     if rh_cond_2 < 0:
-                        print(f"I FOUND YOU: a1 = {targ1:.3f}, a2 = {targ2:.3f}, rh_cond_2 = {rh_cond_2:.3f}")
+                        print(f"I FOUND YOU: a1 = {targ1:.12f}, a2 = {targ2:.12f}, rh_cond_2 = {rh_cond_2:.12f}")
                     rhs.append(rh_cond_2)
 
         rhs_3d = np.array(rhs).reshape((target_n_points, target_n_points, target_n_points))
@@ -844,5 +847,85 @@ class Simulations:
         return fig
 
 
+    def simulation_18(self, config_path: str) -> plt.Figure | None:
+        """
+        Simulation 18: Routh-Hurwitz stability for 5th order polynomial. Plot as a function of a1, a2, a3 together.
+        Like simulation 17, but plotting the eigenvalue directly.
+        """
+        config = self._load_yaml(config_path=config_path)
+
+        target_span = config.get('target_span', [0, 1])
+        target_n_points = config.get('target_n_points', 10) # Change this to ~50 and use np.logspace in production!
+
+        # Base analytical estimate from standard SIR endemic state to feed to fsolve
+        r0 = config.get('r0', 2.5)
+        mu = config.get('mu', 1/80/365)
+        theta = config.get('theta', 1/365)
+        gamma = config.get('gamma', 1/7)
+        S_guess = 1 / r0
+        I_guess = (mu + theta) * (1 - S_guess) / (mu + gamma + theta)
+        R_guess = 1 - S_guess - I_guess
+        # Best guess for memory is I itself
+        initial_guess = [I_guess, R_guess, I_guess, I_guess, I_guess]
+
+        targets = np.linspace(target_span[0], target_span[1], target_n_points)
+
+        rhs_3d = np.zeros((target_n_points, target_n_points, target_n_points))
+        all_targets = ['a1', 'a2', 'a3']
+
+        # 1. Sweep the parameter space
+        for i, targ1 in enumerate(targets):
+            if i%10 == 0:
+                print(f"\n\n\n\n\n\nSimulating for a1 = {targ1:.3f} ({i+1}/{target_n_points})")
+            for j, targ2 in enumerate(targets):
+                if j%10 == 0:
+                    print(f"\n\nSimulating for a2 = {targ2:.3f} ({j+1}/{target_n_points})")
+                for k, targ3 in enumerate(targets):
+                    if k%10 == 0:
+                        print(f"Simulating for a3 = {targ3:.3f} ({k+1}/{target_n_points})")
+                    params = {'a1': targ1, 'a2': targ2, 'a3': targ3}
+                    model = SIRS(config_path=config_path, **params)
+
+                    equilibrium = model.find_equilibrium(initial_guess=initial_guess)
+                    stability_calculator = EigenStability(model=model, equilibrium=equilibrium)
+                    max_real_eigenvalue = stability_calculator.compute()
+
+                    if max_real_eigenvalue > 0:
+                        print(f"HOPF BIFURCATION FOUND: a1={targ1:.3f}, a2={targ2:.3f}, a3={targ3:.3f} | Max Real Eig: {max_real_eigenvalue:.6e}")
+
+                    # Directly populate the 3D array matrix (Negated for plotting compatibility)
+                    rhs_3d[i, j, k] = -max_real_eigenvalue
+
+        # 2. Iterate over target combinations
+        fig = None
+        for combo_idx in [['a1', 'a2'], ['a1', 'a3'], ['a2', 'a3']]:
+
+            # Identify which parameter axis is NOT in the current combination
+            missing_axis = [idx for idx, target in enumerate(all_targets) if target not in combo_idx][0]
+
+            # Project the 3D array down to 2D for plotting.
+            # Using np.min to visualize worst-case stability over the hidden dimension.
+            rhs_combo = np.min(rhs_3d, axis=missing_axis)
+            rhs_flat = rhs_combo.flatten()
+
+            # 3. Plot the 2D grid
+            params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='18', sim_17_idx=combo_idx)}
+
+            # Note: Iteratively overwriting `fig` will only return the last plot created,
+            # but your Plots.plot_rh function handles saving the intermediate files internally.
+            fig = Plots(show_cumulative_incidence=config.get('show_cumulative_incidence', False),
+                        show_params=config.get('show_params', False),
+                        show_legend=config.get('show_legend', False),
+                        show_title=config.get('show_title', False),
+                        save_figures=True).plot_rh(
+                solution=rhs_flat,
+                x_span=target_span,
+                y_span=target_span,
+                n_points=target_n_points,
+                **params
+            )
+
+        return fig
+
 if __name__ == '__main__':
-    Simulations().simulation_17(config_path ='../config/config_17.yaml')
+    Simulations().simulation_18(config_path ='../config/config_18.yaml')
