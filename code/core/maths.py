@@ -263,6 +263,10 @@ class RH_FifthOrder(RH):
 
 
 class DelayStability:
+    """
+    Stability calculator for delay differential equations.
+    Computes the critical frequency and period of oscillations at the Hopf bifurcation point.
+    """
 
     def __init__(self, model: SIRS, equilibrium: list | np.ndarray):
         self.model = model
@@ -276,11 +280,12 @@ class DelayStability:
 
 
     def _get_beta(self):
-        pass
+        beta_func = self.model._physics.beta
+        return beta_func(t=0., X=self.m)
 
 
     def _get_dot_beta(self):
-        pass
+        return - self.model.alpha1 / (1 + self.model.alpha1 * self.m) * self.model._physics.beta(t=0., X=self.m)
 
 
     def _define_functions(self):
@@ -303,7 +308,10 @@ class DelayStability:
         Solve equation for omega:
         omega^4 + omega^2 (2AJ - A^2 - 2K) + (2KB - B^2 - 2LA) = 0
         """
-        pass
+        coeffs = [1, 2*self._A * self._J - self._A**2 - 2 * self._K, 2 * self._K * self._B - self._B**2 - 2 * self._L * self._A]
+        roots = np.roots(coeffs)
+        freqs = np.sqrt(roots)
+        return freqs
 
 
     def _compute_period(self, omega:float | int):
