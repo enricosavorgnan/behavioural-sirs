@@ -1,0 +1,27 @@
+# Configuration File for SIMULATION 19
+
+simulation_n : 19
+simulation_name : "Simulation 19: Delay Stability Analysis"
+
+
+
+# Model parameters
+
+model_type: 'sirs_delay_incidence'
+
+r0 : 2.5
+theta : !expr 1/365
+mu : !expr 1/365/80
+gamma : !expr 1/14
+a1 : !expr 1/50000
+a2 : !expr 1/365
+k1 : 1.
+k2 : 1.
+alpha1 : 500.
+alpha2 : 500.
+
+delta : 0.
+omega : 0.
+T : 14
+
+initial_conditions : [0.001, 0., 0.]

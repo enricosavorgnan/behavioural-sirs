@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from code.core.models import SIRS
 
 from code.core.maths import RH_FifthOrder, RH_ForthOrder, RH_ThirdOrder
-from code.core.maths import EigenStability
+from code.core.maths import EigenStability, DelayStability
 
 from code.core.plots import Plots
 from code.core.utils import expr
@@ -876,7 +876,6 @@ class Simulations:
         rhs_3d = np.zeros((target_n_points, target_n_points, target_n_points))
         all_targets = ['a1', 'a2', 'a3']
 
-        # 1. Sweep the parameter space
         for i, targ1 in enumerate(targets):
             if i%10 == 0:
                 print(f"\n\n\n\n\n\nSimulating for a1 = {targ1:.3f} ({i+1}/{target_n_points})")
@@ -895,27 +894,18 @@ class Simulations:
 
                     if max_real_eigenvalue > 0:
                         print(f"HOPF BIFURCATION FOUND: a1={targ1:.3f}, a2={targ2:.3f}, a3={targ3:.3f} | Max Real Eig: {max_real_eigenvalue:.6e}")
-
-                    # Directly populate the 3D array matrix (Negated for plotting compatibility)
                     rhs_3d[i, j, k] = -max_real_eigenvalue
 
-        # 2. Iterate over target combinations
         fig = None
         for combo_idx in [['a1', 'a2'], ['a1', 'a3'], ['a2', 'a3']]:
 
-            # Identify which parameter axis is NOT in the current combination
             missing_axis = [idx for idx, target in enumerate(all_targets) if target not in combo_idx][0]
 
-            # Project the 3D array down to 2D for plotting.
             # Using np.min to visualize worst-case stability over the hidden dimension.
             rhs_combo = np.min(rhs_3d, axis=missing_axis)
             rhs_flat = rhs_combo.flatten()
 
-            # 3. Plot the 2D grid
             params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='18', sim_17_idx=combo_idx)}
-
-            # Note: Iteratively overwriting `fig` will only return the last plot created,
-            # but your Plots.plot_rh function handles saving the intermediate files internally.
             fig = Plots(show_cumulative_incidence=config.get('show_cumulative_incidence', False),
                         show_params=config.get('show_params', False),
                         show_legend=config.get('show_legend', False),
@@ -930,5 +920,37 @@ class Simulations:
 
         return fig
 
+
+    def simulation_19(self, config_path: str) -> plt.Figure | None:
+        """
+        Simulation 19: Solve the Delay Equation to spot frequencies and periods of oscillations for Delayed SIRS.
+        """
+        config = self._load_yaml(config_path=config_path)
+
+        # Base analytical estimate from standard SIR endemic state to feed to fsolve
+        r0 = config.get('r0', 2.5)
+        mu = config.get('mu', 1/80/365)
+        theta = config.get('theta', 1/365)
+        gamma = config.get('gamma', 1/7)
+        S_guess = 1 / r0
+        I_guess = (mu + theta) * (1 - S_guess) / (mu + gamma + theta)
+        R_guess = 1 - S_guess - I_guess
+        initial_guess = [I_guess, R_guess, I_guess]
+
+        # Model run
+        model = SIRS(config_path=config_path)
+        # equilibrium = model.find_equilibrium(initial_guess=initial_guess)
+        # frequencies, periods = DelayStability(model=model, equilibrium=equilibrium).compute()
+        solutions = model.simulate(t_span=[0, 20000], n_points=20000, initial_conditions=[0.001, 0., 0.])
+        frequencies, periods = DelayStability(model=model, equilibrium=solutions[:, -1]).compute()
+
+        print(f"Frequencies:\t\t{frequencies}\nPeriods: \t\t{periods}")
+
+        return
+
+
+
+
+
 if __name__ == '__main__':
-    Simulations().simulation_0(config_path ='../config/config_0.yaml')
+    Simulations().simulation_19(config_path ='../config/config_19.yaml')

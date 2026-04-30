@@ -274,9 +274,12 @@ class DelayStability:
 
         self.i = self.equilibrium[0]
         self.r = self.equilibrium[1]
+        self.s = 1 - self.i - self.r
         self.m = self.equilibrium[2]
         self.beta = self._get_beta()
         self.dot_beta = self._get_dot_beta()
+
+        self._define_functions()
 
 
     def _get_beta(self):
@@ -289,10 +292,10 @@ class DelayStability:
 
 
     def _define_functions(self):
-        self._A = self.model.beta * self.i + self.model.mu + self.model.theta
-        self._B = self.model.beta * self.model.i * (self.model.mu + self.model.theta + self.model.gamma)
-        self._C = self.model.beta * self.s + self.model.mu + self.model.theta
-        self._D = self.model.beta * self.s * (self.model.mu + self.model.theta)
+        self._A = self.beta * self.i + self.model.mu + self.model.theta
+        self._B = self.beta * self.i * (self.model.mu + self.model.theta + self.model.gamma)
+        self._C = self.beta * self.s + self.model.mu + self.model.theta
+        self._D = self.beta * self.s * (self.model.mu + self.model.theta)
         self._E = - self.i * self.s * self.dot_beta
 
         self._J = self._A + self._E / self.model.T
