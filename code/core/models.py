@@ -51,7 +51,9 @@ class SIRS:
             alpha2 = self.alpha2,
             alpha3 = self.alpha3,
             delta = self.delta,
-            omega = self.omega )
+            omega = self.omega,
+            T = self.T
+        )
 
         self.model = getattr(self._physics, self.model_type)
 
@@ -73,6 +75,7 @@ class SIRS:
         self.alpha3 : float = model_params.get('alpha3', 1.)
         self.delta : float = model_params.get('delta', 0)
         self.omega : float = model_params.get('omega', 2 * np.pi / 365)
+        self.T : int = int(model_params.get('T', 14))
 
         # set values to float
         for k, v in vars(self).items():
@@ -103,6 +106,7 @@ class SIRS:
         self.alpha3 : float = config.get('alpha3', 1.)
         self.delta : float = config.get('delta', 0)
         self.omega : float = config.get('omega', 2 * np.pi / 365)
+        self.T : int = int(config.get('T', 14))
 
         # set values to float
         for k, v in vars(self).items():
@@ -234,7 +238,7 @@ class SIRS:
         """
         if self.model_type in ['sirs']:
             assert len(initial_conditions) == 2, "Expected 2 initial conditions for this model."
-        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence']:
+        elif self.model_type in ['sirs_zero_layer', 'sirs_zero_layer_incidence', 'sirs_one_layer', 'sirs_one_layer_incidence', 'sirs_delay', 'sirs_delay_incidence']:
             assert len(initial_conditions) == 3, "Expected 3 initial conditions for this model."
         elif self.model_type in ['sirs_two_layer', 'sirs_two_layer_incidence', 'sirs_two_layers_one_memory', 'sirs_two_layers_one_memory_incidence']:
             assert len(initial_conditions) == 4, "Expected 4 initial conditions for this model."
@@ -269,7 +273,7 @@ class SIRS:
 
 if __name__ == "__main__":
     params = {
-        'model_type': 'sirs_three_layer',
+        'model_type': 'sirs_delay_incidence',
         'r0': 2.5,
         'gamma': 1/7,
         'mu': 1/80/365,
@@ -284,7 +288,8 @@ if __name__ == "__main__":
         'alpha2': 1.,
         'alpha3' : 0.,
         'delta': 0.,
-        'omega': 0.
+        'omega': 0.,
+        'T': 14
     }
 
     model = SIRS(

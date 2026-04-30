@@ -35,7 +35,9 @@ class BetaFunction:
                                  'sirs_two_layer_one_memory',
                                  'sirs_two_layer_incidence_one_memory',
                                  'sirs_three_layer_one_memory',
-                                 'sirs_three_layer_incidence_one_memory']:
+                                 'sirs_three_layer_incidence_one_memory',
+                                 'sirs_delay',
+                                 'sirs_delay_incidence']:
             return self.beta_one
 
         elif self.model_type in ['sirs_two_layer',

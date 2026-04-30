@@ -70,7 +70,10 @@ class Simulations:
             'sirs_three_layer_one_memory' : '3L1M',
             'sirs_three_layer_incidence_one_memory' : '3LI1M',
             'sirs_three_layer_two_memory' : '3L2M',
-            'sirs_three_layer_incidence_two_memory' : '3LI2M'
+            'sirs_three_layer_incidence_two_memory' : '3LI2M',
+
+            'sirs_delay' : 'D',
+            'sirs_delay_incidence' : 'DI'
         }
         if type(model_types) == str:
             return match_type[model_types]
@@ -928,4 +931,4 @@ class Simulations:
         return fig
 
 if __name__ == '__main__':
-    Simulations().simulation_18(config_path ='../config/config_18.yaml')
+    Simulations().simulation_0(config_path ='../config/config_0.yaml')

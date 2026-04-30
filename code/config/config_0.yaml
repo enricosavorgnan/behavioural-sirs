@@ -7,7 +7,7 @@ simulation_name : "Simulation 0: JASM: Just Another Sirs Model"
 
 # Model parameters
 
-model_type: 'sirs_two_layer_one_memory'
+model_type: 'sirs_delay_incidence'
 
 r0 : 2.5
 theta : !expr 1/365
@@ -22,10 +22,11 @@ alpha2 : 500.
 
 delta : 0.
 omega : 0.
+T : 14
 
-t_span : [0, 20000001]
-n_points : 20000000
-initial_conditions : [0.001, 0., 0., 0. ]
+t_span : [0, 20001]
+n_points : 20000
+initial_conditions : [0.001, 0., 0.]
 
 
 
@@ -36,4 +37,4 @@ show_params : False
 show_title : False
 
 plot_together : True
-plot_t_span : [0, 2000000]
+plot_t_span : [0, 2000]

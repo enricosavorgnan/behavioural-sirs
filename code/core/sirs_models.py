@@ -22,7 +22,8 @@ class SIRSModels:
                  alpha2 : float | None = 1.,
                  alpha3 : float | None = 1.,
                  delta: float | None = 0.,
-                 omega: float | None = 2 * np.pi / 365):
+                 omega: float | None = 2 * np.pi / 365,
+                 T : int | None = 14):
 
         self.model_type = model_type if model_params is None else model_params.get('model_type', 'sirs')
         # Model must be valid
@@ -40,7 +41,9 @@ class SIRSModels:
                                    'sirs_three_layer_one_memory',
                                    'sirs_three_layer_incidence_one_memory',
                                    'sirs_three_layer_two_memory',
-                                   'sirs_three_layer_incidence_two_memory'
+                                   'sirs_three_layer_incidence_two_memory',
+                                   'sirs_delay',
+                                   'sirs_delay_incidence'
                                    ], f"Specified model type {self.model_type} is not valid."
 
         self.r0 = r0 if model_params is None else model_params.get('r0', 1.)
@@ -76,6 +79,12 @@ class SIRSModels:
         assert isinstance(self.delta, (int, float)), "Delta provided should be set for SIRS model."
         assert isinstance(self.omega, (int, float)), "Omega provided should be set for SIRS model."
 
+        if self.model_type in ['sirs_delay', 'sirs_delay_incidence']:
+            self.T = int(T) if model_params is None else int(model_params.get('T', 14))
+            assert isinstance(self.T, int), "T provided should be set for SIRS model."
+            self.Is = []
+            self.incidences = []
+
         self.beta_zero = self.r0 * (self.mu + self.gamma)
         self.beta = BetaFunction(model_type=self.model_type,
                                       beta_zero=self.beta_zero,
@@ -103,9 +112,18 @@ class SIRSModels:
             'sirs_three_layer_one_memory':          self.sirs_three_layer_one_memory,
             'sirs_three_layer_incidence_one_memory':self.sirs_three_layer_incidence_one_memory,
             'sirs_three_layer_two_memory':          self.sirs_three_layer_two_memory,
-            'sirs_three_layer_incidence_two_memory':self.sirs_three_layer_incidence_two_memory
+            'sirs_three_layer_incidence_two_memory':self.sirs_three_layer_incidence_two_memory,
+            'sirs_delay':                           self.sirs_delay,
+            'sirs_delay_incidence':                 self.sirs_delay_incidence
         }
         return models[self.model_type]
+
+
+    def _manage_delay(self):
+        if len(self.Is) > self.T:
+            self.Is.pop(0)
+        if len(self.incidences) > self.T:
+            self.incidences.pop(0)
 
 
     # --- ODE Models ---
@@ -316,10 +334,45 @@ class SIRSModels:
         return [dI, dR, dM1, dM2, dM3]
 
 
+    def sirs_delay(self, t, X):
+        I, R, M = X
+
+        self.Is.append(I)
+
+        beta_value = self.beta(t, M)
+        incidence = beta_value * I * (1. - R - I)
+
+        delay_I = self.Is[0]
+        self._manage_delay()
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM = (I - delay_I) / self.T
+
+        return [dI, dR, dM]
+
+
+    def sirs_delay_incidence(self, t, X):
+        I, R, M = X
+
+        beta_value = self.beta(t, M)
+        incidence = beta_value * I * (1. - R - I)
+
+        self.incidences.append(incidence)
+        delay_incidence = self.incidences[0]
+        self._manage_delay()
+
+        dI = incidence - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM = (incidence - delay_incidence) / self.T
+
+        return [dI, dR, dM]
+
+
 
 if __name__ == '__main__':
     model = SIRSModels(
-        model_type='sirs_three_layer_incidence',
+        model_type='sirs_delay',
         r0 = 2,
         mu= 1 / 80 / 365,
         theta= 1 / 365,
@@ -334,8 +387,9 @@ if __name__ == '__main__':
         alpha2 = 1,
         alpha3 = 1,
         delta = 4,
-        omega = 2 * np.pi / 365
+        omega = 2 * np.pi / 365,
+        T = 7
     )
 
-    result = model.model(t=5, X=[0.3, 0.1, 0., 0., 0.])
+    result = model.model(t=5, X=[0.3, 0.1, 0.])
     print(result)
