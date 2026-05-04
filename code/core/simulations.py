@@ -83,14 +83,14 @@ class Simulations:
 
 
 
-    def _retrieve_img_path(self, config_path : str, n_simulation : int | str, sim_17_idx : list[str] | None = None) -> str:
+    def _retrieve_img_path(self, config_path : str, n_simulation : int | str, sim_17_idx : list[str] | None = None, **kwargs) -> str:
         """
         Retrieve Image Path given the configuration file and the number of simulation
         """
         config = self._load_yaml(config_path)
 
         model_type = config.get('model_type', 'sirs')
-        model_type = self._retrieve_model_string(model_type)
+        str_model_type = self._retrieve_model_string(model_type)
 
         r0 = config.get('r0', 2.5)
         theta = round(config.get('theta', 1/365), 3) if type(config.get('theta', 1/365)) == float else [round(theta, 3) for theta in config.get('theta', 1/365)]
@@ -100,10 +100,14 @@ class Simulations:
         a2 = round(config.get('a2', 1/90), 3) if type(config.get('a2', 1/90)) == float else [round(a2, 3) for a2 in config.get('a2', 1/90)]
 
         img_folder = f'../img/simulation_{n_simulation}/'
-        img_path = f'model_{model_type}_r0_{r0}_theta_{theta}_k_{k}_a1_{a1}_a2_{a2}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        img_path = f'model_{str_model_type}_r0_{r0}_theta_{theta}_k_{k}_a1_{a1}_a2_{a2}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
 
-        if n_simulation == '17':
+        if n_simulation == '17' and kwargs.get('plot_type', '3D') == 'Combo':
             img_path = f'combo_{sim_17_idx[0]}_{sim_17_idx[1]}_model_{model_type}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        if model_type in ['sirs_delay', 'sirs_delay_incidence']:
+            T = int(config.get('T', 14) )
+            img_path = f'model_{str_model_type}_r0_{r0}_theta_{theta}_T_{T}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+
 
         return img_folder + img_path
 
@@ -145,7 +149,7 @@ class Simulations:
         fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
                     show_params = config.get('show_params', False),
                     show_title = config.get('show_title', False),
-                    save_figures = True).px_plot_simulation(solution=solution,
+                    save_figures = True).plot_simulation(solution=solution,
                                                          t_span=plot_t_span,
                                                          n_points=plot_n_points, **params)
         fig.show()
@@ -812,7 +816,7 @@ class Simulations:
                     solution = model.simulate(t_span=t_span, n_points=n_points, initial_conditions=initial_conditions)
 
                     equilibrium = [solution[0][-1], solution[1][-1], solution[2][-1], solution[3][-1], solution[4][-1]]
-                    _, rh_cond_2 = RH_FifthOrder(target=['a1', 'a2', 'a3'], equilibrium=equilibrium, model=model).compute(x=targ1, y=targ2, z=targ3, **{'verbose': False})
+                    rh_cond_2, _  = RH_FifthOrder(target=['a1', 'a2', 'a3'], equilibrium=equilibrium, model=model).compute(x=targ1, y=targ2, z=targ3, **{'verbose': False})
                     if rh_cond_2 < 0:
                         print(f"I FOUND YOU: a1 = {targ1:.12f}, a2 = {targ2:.12f}, rh_cond_2 = {rh_cond_2:.12f}")
                     rhs.append(rh_cond_2)
@@ -820,32 +824,66 @@ class Simulations:
         rhs_3d = np.array(rhs).reshape((target_n_points, target_n_points, target_n_points))
         all_targets = ['a1', 'a2', 'a3']
 
-        # 2. Iterate over target combinations
-        for combo_idx in [['a1', 'a2'], ['a1', 'a3'], ['a2', 'a3']]:
-
-            # Identify which parameter axis is NOT in the current combination
-            missing_axis = [idx for idx, target in enumerate(all_targets) if target not in combo_idx][0]
-
-            # Project the 3D array down to 2D for plotting.
-            # Using np.min to visualize worst-case stability over the hidden dimension.
-            # (You can change this to np.mean() or take a middle slice like rhs_3d.take(target_n_points//2, axis=missing_axis))
-            rhs_combo = np.min(rhs_3d, axis=missing_axis)
-
-            rhs_flat = rhs_combo.flatten()
-
-            # 3. Plot the 2D grid
-            params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='17', sim_17_idx=combo_idx)}
+        plot_type = config.get('plot_type', '3D') # Options: 'Combo', '3D', 'Voxel'
+        print(f"Plotting with plot_type = {plot_type}")
+        if plot_type == '3D':
+            params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='17')}
             fig = Plots(show_cumulative_incidence=config.get('show_cumulative_incidence', False),
                         show_params=config.get('show_params', False),
                         show_legend=config.get('show_legend', False),
                         show_title=config.get('show_title', False),
-                        save_figures=True).plot_rh(
-                solution=rhs_flat,
+                        save_figures=True).plot_rh_3d(
+                solution=rhs_3d,
                 x_span=target_span,
                 y_span=target_span,
+                z_span=target_span,
                 n_points=target_n_points,
                 **params
             )
+            return fig
+
+        elif plot_type == 'Voxel':
+            params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='17')}
+            fig = Plots(show_cumulative_incidence=config.get('show_cumulative_incidence', False),
+                        show_params=config.get('show_params', False),
+                        show_legend=config.get('show_legend', False),
+                        show_title=config.get('show_title', False),
+                        save_figures=True).plot_rh_voxel(
+                solution=rhs_3d,
+                x_span=target_span,
+                y_span=target_span,
+                z_span=target_span,
+                n_points=target_n_points,
+                **params
+            )
+            return fig
+
+        else:
+            for combo_idx in [['a1', 'a2'], ['a1', 'a3'], ['a2', 'a3']]:
+
+                # Identify which parameter axis is NOT in the current combination
+                missing_axis = [idx for idx, target in enumerate(all_targets) if target not in combo_idx][0]
+
+                # Project the 3D array down to 2D for plotting.
+                # Using np.min to visualize worst-case stability over the hidden dimension.
+                # (You can change this to np.mean() or take a middle slice like rhs_3d.take(target_n_points//2, axis=missing_axis))
+                rhs_combo = np.min(rhs_3d, axis=missing_axis)
+
+                rhs_flat = rhs_combo.flatten()
+
+                # 3. Plot the 2D grid
+                params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='17', sim_17_idx=combo_idx)}
+                fig = Plots(show_cumulative_incidence=config.get('show_cumulative_incidence', False),
+                            show_params=config.get('show_params', False),
+                            show_legend=config.get('show_legend', False),
+                            show_title=config.get('show_title', False),
+                            save_figures=True).plot_rh(
+                    solution=rhs_flat,
+                    x_span=target_span,
+                    y_span=target_span,
+                    n_points=target_n_points,
+                    **params
+                )
 
         return fig
 
@@ -939,10 +977,10 @@ class Simulations:
 
         # Model run
         model = SIRS(config_path=config_path)
-        # equilibrium = model.find_equilibrium(initial_guess=initial_guess)
-        # frequencies, periods = DelayStability(model=model, equilibrium=equilibrium).compute()
-        solutions = model.simulate(t_span=[0, 20000], n_points=20000, initial_conditions=[0.001, 0., 0.])
-        frequencies, periods = DelayStability(model=model, equilibrium=solutions[:, -1]).compute()
+        equilibrium = model.find_equilibrium(initial_guess=initial_guess)
+        frequencies, periods = DelayStability(model=model, equilibrium=equilibrium).compute()
+        # solutions = model.simulate(t_span=[0, 20000], n_points=20000, initial_conditions=[0.001, 0., 0.])
+        # frequencies, periods = DelayStability(model=model, equilibrium=solutions[:, -1]).compute()
 
         print(f"Frequencies:\t\t{frequencies}\nPeriods: \t\t{periods}")
 
@@ -953,4 +991,4 @@ class Simulations:
 
 
 if __name__ == '__main__':
-    Simulations().simulation_19(config_path ='../config/config_19.yaml')
+    Simulations().simulation_17(config_path ='../config/config_17.yaml')

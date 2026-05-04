@@ -28,19 +28,12 @@ omega : 0.
 t_span : [0, 10000]
 initial_conditions : [0.001, 0., 0., 0., 0. ]
 
-
-target : 'a1'
 target_span : [0, 0.1]
-target_n_points : 10
-
-
+target_n_points : 30
 
 
 # Plotting parameters
-
-show_cumulative_incidence : False
-show_params : False
-show_title : False
-
-plot_together : False
-plot_t_span : [0, 1250]
+'plot_type' : '3D'
+'save_plot' : True
+#'plot_type' : 'Combo'
+#'plot_type' : 'Voxel'

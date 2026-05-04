@@ -150,7 +150,7 @@ class Plots:
         t = np.linspace(t_span[0], t_span[1], n_points)
 
         plt.rcParams['text.usetex'] = True
-        plt.figure(figsize=(8, 5))
+        plt.figure(figsize=(5, 5))
         plt.xlabel(r'$t$')
         plt.ylabel(r'$f(t)$')
         # plt.ylim(-0.05, 1.05)
@@ -270,6 +270,66 @@ class Plots:
         plt.tight_layout()
 
         return plt.gcf()
+
+
+    def plot_rh_3d(self, solution, x_span, y_span, z_span, **kwargs) -> plt.Figure:
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Generate the actual parameter values for each axis
+        xs = np.linspace(x_span[0], x_span[1], solution.shape[0])
+        ys = np.linspace(y_span[0], y_span[1], solution.shape[1])
+        zs = np.linspace(z_span[0], z_span[1], solution.shape[2])
+
+        # Create the 3D grid
+        # Use indexing='ij' to match the loop order (a1, a2, a3)
+        A1, A2, A3 = np.meshgrid(xs, ys, zs, indexing='ij')
+
+        # Plot using real values
+        img = ax.scatter(A1, A2, A3, c=solution.flatten(), cmap='inferno', s=50)
+
+        ax.set_xlabel('$a_1$')
+        ax.set_ylabel('$a_2$')
+        ax.set_zlabel('$a_3$')
+
+        cbar = plt.colorbar(img, ax=ax, pad=0.1)
+        cbar.set_label(r'$RH(a_1, a_2, a_3)$')
+
+        self._manage_plot_settings(plt.gcf(), solution[0], [x_span[0], x_span[1]], **kwargs)  # Pass first solution for settings
+        plt.tight_layout()
+
+        return fig
+
+
+    def plot_rh_voxel(self, solution, x_span, y_span, z_span, threshold=0, **kwargs) -> plt.Figure:
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Define the 'unstable' region (where condition is below threshold)
+        unstable_region = solution < threshold
+
+        # Plot the voxels
+        ax.voxels(unstable_region, edgecolor='k', alpha=0.3, facecolors='red')
+
+        # Set the labels
+        ax.set_xlabel('$a_1$')
+        ax.set_ylabel('$a_2$')
+        ax.set_zlabel('$a_3$')
+
+        # Fix the Ticks: Map the 0-N indices to x_span, y_span, z_span
+        n_x, n_y, n_z = solution.shape
+
+        ax.set_xticks(np.linspace(0, n_x, 5))
+        ax.set_xticklabels([f"{v:.2e}" for v in np.linspace(x_span[0], x_span[1], 5)])
+        ax.set_yticks(np.linspace(0, n_y, 5))
+        ax.set_yticklabels([f"{v:.2e}" for v in np.linspace(y_span[0], y_span[1], 5)])
+        ax.set_zticks(np.linspace(0, n_z, 5))
+        ax.set_zticklabels([f"{v:.2e}" for v in np.linspace(z_span[0], z_span[1], 5)])
+
+        self._manage_plot_settings(plt.gcf(), solution[0], [x_span[0], x_span[1]], **kwargs)  # Pass first solution for settings
+        plt.tight_layout()
+
+        return fig
 
 
     def px__manage_plot_settings(self, fig: go.Figure, solution: list[np.ndarray] | np.ndarray, t_span: list[float | int], **kwargs):

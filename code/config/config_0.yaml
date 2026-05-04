@@ -13,8 +13,8 @@ r0 : 2.5
 theta : !expr 1/365
 mu : !expr 1/365/80
 gamma : !expr 1/14
-a1 : !expr 1/50000
-a2 : !expr 1/365
+a1 : !expr 1/15
+a2 : !expr 1/90
 k1 : 1.
 k2 : 1.
 alpha1 : 500.
@@ -22,10 +22,10 @@ alpha2 : 500.
 
 delta : 0.
 omega : 0.
-T : 14
+T : 500
 
-t_span : [0, 20001]
-n_points : 20000
+t_span : [0, 800001]
+n_points : 800000
 initial_conditions : [0.001, 0., 0.]
 
 
@@ -37,4 +37,4 @@ show_params : False
 show_title : False
 
 plot_together : True
-plot_t_span : [0, 2000]
+plot_t_span : [0, 800000]

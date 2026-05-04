@@ -10,7 +10,7 @@ import numpy as np
 import yaml
 from code.core.utils import expr
 from scipy.integrate import solve_ivp
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, least_squares
 
 from code.core.sirs_models import SIRSModels
 
@@ -195,32 +195,61 @@ class SIRS:
         return cumulative_incidence
 
 
-    def find_equilibrium(self, initial_guess: list, t: float = 0.) -> np.ndarray:
+    # def find_equilibrium(self, initial_guess: list, t: float = 0.) -> np.ndarray:
+    #     """
+    #     Finds the exact mathematical equilibrium of the system using scipy.optimize.fsolve.
+    #
+    #     Parameters
+    #     ----------
+    #     initial_guess : list
+    #         A rough guess for the equilibrium state.
+    #         For best results, use the theoretical endemic equilibrium of the
+    #         standard SIR model as the base guess.
+    #     t : float, optional
+    #         The time at which to evaluate the model for finding the equilibrium.
+    #         If None, the model will be evaluated at t=0.
+    #     Returns
+    #     -------
+    #     np.ndarray
+    #         The exact steady-state state variables [I*, R*, M1*, ...].
+    #     """
+    #     ode_func = lambda x: self.model(t, x)
+    #
+    #     equilibrium, info, ier, mesg = fsolve(ode_func, initial_guess, full_output=True)
+    #
+    #     if ier != 1:
+    #         print(f"Warning: fsolve did not converge. Reason: {mesg}")
+    #
+    #     return equilibrium
+
+    def find_equilibrium(self, initial_guess: list) -> np.ndarray:
         """
-        Finds the exact mathematical equilibrium of the system using scipy.optimize.fsolve.
-
-        Parameters
-        ----------
-        initial_guess : list
-            A rough guess for the equilibrium state.
-            For best results, use the theoretical endemic equilibrium of the
-            standard SIR model as the base guess.
-        t : float, optional
-            The time at which to evaluate the model for finding the equilibrium.
-            If None, the model will be evaluated at t=0.
-        Returns
-        -------
-        np.ndarray
-            The exact steady-state state variables [I*, R*, M1*, ...].
+        Finds the exact mathematical equilibrium of the system using bounded least squares.
         """
-        ode_func = lambda x: self.model(t, x)
+        # We want f(X) = 0
+        ode_func = lambda X: np.array(self.model(0.0, X))
 
-        equilibrium, info, ier, mesg = fsolve(ode_func, initial_guess, full_output=True)
+        n_vars = len(initial_guess)
 
-        if ier != 1:
-            print(f"Warning: fsolve did not converge. Reason: {mesg}")
+        # Strictly bound all compartments between 0.0 and 1.0
+        bounds = (np.zeros(n_vars), np.ones(n_vars))
 
-        return equilibrium
+        # Use the Trust Region Reflective (trf) algorithm, which handles bounds
+        # and scales well for ill-conditioned Jacobians.
+        # Set xtol and ftol tighter since I* can be very small.
+        result = least_squares(
+            ode_func,
+            initial_guess,
+            bounds=bounds,
+            method='trf',
+            xtol=1e-12,
+            ftol=1e-12
+        )
+
+        if not result.success:
+            print(f"Warning: Equilibrium search failed to converge. Reason: {result.message}")
+
+        return result.x
 
 
     def simulate(self, t_span: list, initial_conditions: list, n_points : int):
