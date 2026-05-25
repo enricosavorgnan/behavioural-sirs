@@ -61,7 +61,7 @@ class SIRS:
 
         self.model = getattr(self._physics, self.model_type)
 
-        print(self.method)
+        print(f"Method: {self.method}")
 
 
     def _set_params_with_dict(self, model_params: dict):
@@ -168,11 +168,14 @@ class SIRS:
 
         if method in ['RK45']:
             solution = solve_ivp(self.model, t_span, variables, dense_output=True, method=method)
+            return solution.sol(t)
         else:
             assert n_points is not None, f"n_points must be provided when using method {method}"
             assert method in ['KenCarp4', 'Tsit5'], f"Method {method} not recognized. Allowed  methods are\n- Tsit5\n- KenCarp4"
             solution = self.solve_stiff_ode(t_span = t_span, n_points=n_points, variables=variables, method=method)
-        return solution
+            print(type(solution), solution.shape)
+            solution = np.array(solution)
+            return solution
 
 
     def solve_stiff_ode(self,
@@ -203,29 +206,48 @@ class SIRS:
         # Define helper functions
         class JuliaOdeSolution:
             pass
-        def julia_wrapper(du, u, p, t):
-            derivative = self.model(t, np.array(u))
+
+        DDE = de.seval("""
+            function DDE(du, u, h, p, t)
+                derivative = self.model(t, u)
+                du[:] = derivative[:]
+                return du
+            end
+        """)
+        history = de.seval("""
+            function history(p, t)
+                return v0
+            end 
+        """)
+        def ODE(du, u, p, t):
+            derivative = self.model(t, u)
             du[:] = derivative[:]
             return du
 
-        jl.seval("using OrdinaryDiffEq")
+
+        jl.seval("using OrdinaryDiffEq, DelayDiffEq, DifferentialEquations")
 
         v0 = np.array(variables, dtype=np.float64)
+        jl_v0 = jl.Vector(v0)  # Native Julia vector to prevent PyArray conversion issues
+        # print("pesce", jl.seval("typeof(v0)"))
+
         t_span = (float(t_span[0]), float(t_span[1]))
         saveat = (t_span[1]-t_span[0])/n_points
 
-        problem = de.ODEProblem(julia_wrapper, v0, t_span)
-
-        jl_method = jl.OrdinaryDiffEq.Rodas5P() if method == 'KenCarp4' else jl.OrdinaryDiffEq.Tsit5()
-        print(jl_method)
-        solution = de.solve(problem, jl_method, saveat = saveat)
+        jl_method = jl.OrdinaryDiffEq.Rodas5P() if method == 'KenCarp4' else jl.DifferentialEquations.Tsit5()
+        if self.T != 0:
+            problem = de.DDEProblem(DDE, jl_v0, history, t_span)
+            solution = de.solve(problem, jl.MethodOfSteps(jl_method), saveat = saveat)
+            print("ok3")
+        else:
+            problem = de.ODEProblem(ODE, jl.v0, t_span)
+            solution = de.solve(problem, jl_method, saveat = saveat)
 
         res = JuliaOdeSolution()
         res.t = np.array(solution.t)
-
-        res.y = np.array(solution.u).T
-
-        return res
+        res.y = np.stack([np.array(step) for step in solution.u], axis=1)
+        print(type(res.y), res.y.shape)
+        return res.y
 
 
     def cumulative_incidence(self, solution, t_span : list [float | int]):
@@ -328,7 +350,7 @@ class SIRS:
         m3 = initial_conditions[4] if len(initial_conditions) == 5 else None
 
         solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2, m3=m3, method=self.method, n_points=n_points)
-        return solution.sol(t)
+        return np.array(solution)
 
 
     @property

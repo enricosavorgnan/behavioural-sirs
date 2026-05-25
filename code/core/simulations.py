@@ -8,6 +8,7 @@ Provides simulation methods used in the thesis and in the jupyter file `simulati
 import numpy as np
 import yaml
 import datetime
+import argparse
 import matplotlib.pyplot as plt
 
 from code.core.models import SIRS
@@ -144,11 +145,6 @@ class Simulations:
         S = 1. - solution[0] - solution[1]
         solution = np.vstack((S, solution))
         solution = solution[:3]
-
-
-        print(solution[2][0:200])
-        # save on txt file
-
 
         params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='00')}
         fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
@@ -996,4 +992,9 @@ class Simulations:
 
 
 if __name__ == '__main__':
-    Simulations().simulation_0(config_path ='../config/config_0.yaml')
+    parser = argparse.ArgumentParser("Behavioural SIRS")
+    parser.add_argument("--config", default="../config/config_0.yaml")
+    args = parser.parse_args()
+
+    config_path = args.config if args.config else "../config/config_0.yaml"
+    Simulations().simulation_0(config_path = config_path)
