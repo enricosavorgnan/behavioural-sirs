@@ -13,11 +13,8 @@ from scipy.integrate import solve_ivp
 from scipy.optimize import fsolve, least_squares
 
 # Julia is required:
-import os
-import juliapkg
-julia_bin = os.path.dirname(juliapkg.executable())
-os.environ["PATH"] = julia_bin + os.pathsep + os.environ.get("PATH", "")
 from diffeqpy import de
+from juliacall import Main as jl
 
 from code.core.sirs_models import SIRSModels
 
@@ -206,19 +203,21 @@ class SIRS:
         # Define helper functions
         class JuliaOdeSolution:
             pass
-        def julia_wrapper(t, y):
-            return self.model(t, np.array(y))
+        def julia_wrapper(du, u, p, t):
+            derivative = self.model(t, np.array(u))
+            du[:] = derivative[:]
+            return du
 
-        # Ensure Julia backend is started
-        de.setup()
+        jl.seval("using OrdinaryDiffEq")
 
         v0 = np.array(variables, dtype=np.float64)
         t_span = (float(t_span[0]), float(t_span[1]))
         saveat = (t_span[1]-t_span[0])/n_points
 
         problem = de.ODEProblem(julia_wrapper, v0, t_span)
-        jl_method = de.KenCarp4() if method == 'KenCarp4' else de.Tsit5()
 
+        jl_method = jl.OrdinaryDiffEq.Rodas5P() if method == 'KenCarp4' else jl.OrdinaryDiffEq.Tsit5()
+        print(jl_method)
         solution = de.solve(problem, jl_method, saveat = saveat)
 
         res = JuliaOdeSolution()
@@ -328,7 +327,7 @@ class SIRS:
         m2 = initial_conditions[3] if len(initial_conditions) >= 4 else None
         m3 = initial_conditions[4] if len(initial_conditions) == 5 else None
 
-        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2, m3=m3, method=self.method)
+        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2, m3=m3, method=self.method, n_points=n_points)
         return solution.sol(t)
 
 
