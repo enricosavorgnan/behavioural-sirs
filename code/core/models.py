@@ -178,76 +178,175 @@ class SIRS:
             return solution
 
 
+    # def solve_stiff_ode(self,
+    #                     t_span : list[float | int],
+    #                     n_points : int,
+    #                     variables : list[str | int | float],
+    #                     method : str ):
+    #     """
+    #         Solves the ODE system using Julia's DifferentialEquations.jl via diffeqpy.
+    #         Returns an object structured identically to scipy.integrate.solve_ivp output.
+    #
+    #         Parameters
+    #         ----------
+    #         - t_span : list
+    #             List of two elements [t_start, t_end] defining the time span for the simulation.
+    #         - n_points : int
+    #             Number of evaluations
+    #         - variables : list
+    #             Variables used in the simulations
+    #         - method : str
+    #             Method for solving the ODE.
+    #             Allowed methods:
+    #             - KenCarp4 (Kennedy-Carpenter at 4 Order, L-stable, ideal for multi-timescale memory a3 << a1).
+    #             - Tsit5 (Tsitouras at 5 order, highly efficient for non-stiff regimes).
+    #     """
+    #     assert method in ['KenCarp4', 'Tsit5'], f"Method {method} not recognized. Allowed  methods are\n- Tsit5\n- KenCarp4"
+    #
+    #     # Define helper functions
+    #     class JuliaOdeSolution:
+    #         pass
+    #
+    #     DDE = de.seval("""
+    #         function DDE(du, u, h, p, t)
+    #             derivative = self.model(t, u)
+    #             du[:] = derivative[:]
+    #             return du
+    #         end
+    #     """)
+    #     history = de.seval("""
+    #         function history(p, t)
+    #             return v0
+    #         end
+    #     """)
+    #     def ODE(du, u, p, t):
+    #         derivative = self.model(t, u)
+    #         du[:] = derivative[:]
+    #         return du
+    #
+    #
+    #     jl.seval("using OrdinaryDiffEq, DelayDiffEq, DifferentialEquations")
+    #
+    #     v0 = np.array(variables, dtype=np.float64)
+    #     jl_v0 = jl.Vector(v0)  # Native Julia vector to prevent PyArray conversion issues
+    #     # print("pesce", jl.seval("typeof(v0)"))
+    #
+    #     t_span = (float(t_span[0]), float(t_span[1]))
+    #     saveat = (t_span[1]-t_span[0])/n_points
+    #
+    #     jl_method = jl.OrdinaryDiffEq.Rodas5P() if method == 'KenCarp4' else jl.DifferentialEquations.Tsit5()
+    #     if self.T != 0:
+    #         problem = de.DDEProblem(DDE, jl_v0, history, t_span)
+    #         solution = de.solve(problem, jl.MethodOfSteps(jl_method), saveat = saveat)
+    #         print("ok3")
+    #     else:
+    #         problem = de.ODEProblem(ODE, jl.v0, t_span)
+    #         solution = de.solve(problem, jl_method, saveat = saveat)
+    #
+    #     res = JuliaOdeSolution()
+    #     res.t = np.array(solution.t)
+    #     res.y = np.stack([np.array(step) for step in solution.u], axis=1)
+    #     print(type(res.y), res.y.shape)
+    #     return res.y
+
     def solve_stiff_ode(self,
-                        t_span : list[float | int],
-                        n_points : int,
-                        variables : list[str | int | float],
-                        method : str ):
+                        t_span: list[float | int],
+                        n_points: int,
+                        variables: list[str | int | float],
+                        method: str):
         """
-            Solves the ODE system using Julia's DifferentialEquations.jl via diffeqpy.
-            Returns an object structured identically to scipy.integrate.solve_ivp output.
+        Solves the ODE/DDE system using Julia's DifferentialEquations.jl via diffeqpy.
 
-            Parameters
-            ----------
-            - t_span : list
-                List of two elements [t_start, t_end] defining the time span for the simulation.
-            - n_points : int
-                Number of evaluations
-            - variables : list
-                Variables used in the simulations
-            - method : str
-                Method for solving the ODE.
-                Allowed methods:
-                - KenCarp4 (Kennedy-Carpenter at 4 Order, L-stable, ideal for multi-timescale memory a3 << a1).
-                - Tsit5 (Tsitouras at 5 order, highly efficient for non-stiff regimes).
+        Parameters
+        ----------
+        t_span : list
+            [t_start, t_end]
+        n_points : int
+            Number of save-points
+        variables : list
+            Initial conditions
+        method : str
+            'KenCarp4' or 'Tsit5'
         """
-        assert method in ['KenCarp4', 'Tsit5'], f"Method {method} not recognized. Allowed  methods are\n- Tsit5\n- KenCarp4"
-
-        # Define helper functions
-        class JuliaOdeSolution:
-            pass
-
-        DDE = de.seval("""
-            function DDE(du, u, h, p, t)
-                derivative = self.model(t, u)
-                du[:] = derivative[:]
-                return du
-            end
-        """)
-        history = de.seval("""
-            function history(p, t)
-                return v0
-            end 
-        """)
-        def ODE(du, u, p, t):
-            derivative = self.model(t, u)
-            du[:] = derivative[:]
-            return du
-
+        assert method in ['KenCarp4', 'Tsit5'], (
+            f"Method {method} not recognised. Allowed: 'Tsit5', 'KenCarp4'"
+        )
 
         jl.seval("using OrdinaryDiffEq, DelayDiffEq, DifferentialEquations")
 
-        v0 = np.array(variables, dtype=np.float64)
-        jl_v0 = jl.Vector(v0)  # Native Julia vector to prevent PyArray conversion issues
-        # print("pesce", jl.seval("typeof(v0)"))
+        v0       = np.array(variables, dtype=np.float64)
+        jl_v0    = jl.Vector(v0)
+        t_span_f = (float(t_span[0]), float(t_span[1]))
+        saveat   = (t_span_f[1] - t_span_f[0]) / n_points
 
-        t_span = (float(t_span[0]), float(t_span[1]))
-        saveat = (t_span[1]-t_span[0])/n_points
+        jl_method = (jl.OrdinaryDiffEq.Rodas5P()
+                     if method == 'KenCarp4'
+                     else jl.DifferentialEquations.Tsit5())
 
-        jl_method = jl.OrdinaryDiffEq.Rodas5P() if method == 'KenCarp4' else jl.DifferentialEquations.Tsit5()
-        if self.T != 0:
-            problem = de.DDEProblem(DDE, jl_v0, history, t_span)
-            solution = de.solve(problem, jl.MethodOfSteps(jl_method), saveat = saveat)
-            print("ok3")
+        # ------------------------------------------------------------------ #
+        #  DDE branch  (sirs_delay, sirs_delay_incidence)                     #
+        # ------------------------------------------------------------------ #
+        if self.model_type in ['sirs_delay', 'sirs_delay_incidence']:
+            T_delay  = float(self._physics.T)   # continuous delay length
+            physics  = self._physics            # capture for closure
+
+            # History: for t < t0 the state is constant = initial condition
+            def history_fn(p, t):
+                return jl.Vector(v0.copy())
+
+            # DDE right-hand side — uses Julia's h(p, t-T) for past values
+            def DDE(du, u, h, p, t):
+                t_f    = float(t)
+                u_now  = np.array(u, dtype=np.float64)
+                t_past = max(t_f - T_delay, t_span_f[0])
+                u_past = np.array(h(p, t_past), dtype=np.float64)
+
+                I,  R,  M  = u_now[0],  u_now[1],  u_now[2]
+                Ip, Rp, Mp = u_past[0], u_past[1], u_past[2]
+
+                beta_now  = physics.beta(t_f, M)
+                inc_now   = beta_now * I * (1.0 - R - I)
+
+                if self.model_type == 'sirs_delay_incidence':
+                    # dM = ( incidence(t) - incidence(t-T) ) / T
+                    beta_past = physics.beta(t_f - T_delay, Mp)
+                    inc_past  = beta_past * Ip * (1.0 - Rp - Ip)
+                    dM = (inc_now - inc_past) / T_delay
+                else:
+                    # sirs_delay: dM = ( I(t) - I(t-T) ) / T
+                    dM = (I - Ip) / T_delay
+
+                dI = inc_now - I * (physics.mu + physics.gamma)
+                dR = physics.gamma * I - (physics.mu + physics.theta) * R
+
+                du[0] = dI
+                du[1] = dR
+                du[2] = dM
+
+            problem  = de.DDEProblem(DDE, jl_v0, history_fn, t_span_f)
+            solution = de.solve(problem,
+                                jl.MethodOfSteps(jl_method),
+                                saveat=saveat)
+
+        # ------------------------------------------------------------------ #
+        #  ODE branch  (all other models)                                     #
+        # ------------------------------------------------------------------ #
         else:
-            problem = de.ODEProblem(ODE, jl.v0, t_span)
-            solution = de.solve(problem, jl_method, saveat = saveat)
+            def ODE(du, u, p, t):
+                u_py       = np.array(u, dtype=np.float64)
+                derivative = self.model(float(t), u_py)
+                for i, d in enumerate(derivative):
+                    du[i] = float(d)
 
-        res = JuliaOdeSolution()
-        res.t = np.array(solution.t)
-        res.y = np.stack([np.array(step) for step in solution.u], axis=1)
-        print(type(res.y), res.y.shape)
-        return res.y
+            problem  = de.ODEProblem(ODE, jl_v0, t_span_f)   # was: jl.v0 (bug)
+            solution = de.solve(problem, jl_method, saveat=saveat)
+
+        # ------------------------------------------------------------------ #
+        #  Unpack Julia solution → NumPy array (n_vars × n_points)            #
+        # ------------------------------------------------------------------ #
+        res_y = np.stack([np.array(step, dtype=np.float64)
+                          for step in solution.u], axis=1)
+        return res_y
 
 
     def cumulative_incidence(self, solution, t_span : list [float | int]):

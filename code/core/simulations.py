@@ -136,7 +136,8 @@ class Simulations:
         t_span = config.get('t_span', [0, 20000])
         n_points = config.get('n_points', 20000)
         plot_t_span = config.get('plot_t_span', t_span)
-        plot_n_points = (n_points * (plot_t_span[1]-plot_t_span[0])) // (t_span[1]-t_span[0]) + 1
+        plot_n_points = config.get('plot_n_points', (n_points * (plot_t_span[1]-plot_t_span[0])) // (t_span[1]-t_span[0]) + 1)
+        print(plot_n_points, config.get('plot_n_points', 20000))
 
         model = SIRS(config_path=config_path)
         solution = model.simulate(t_span=t_span,
@@ -145,6 +146,7 @@ class Simulations:
         S = 1. - solution[0] - solution[1]
         solution = np.vstack((S, solution))
         solution = solution[:3]
+        print(len(solution[0]))
 
         params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='00')}
         fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
@@ -993,8 +995,13 @@ class Simulations:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Behavioural SIRS")
+    parser.add_argument("--simulation", type=int, default=0)
     parser.add_argument("--config", default="../config/config_0.yaml")
     args = parser.parse_args()
 
     config_path = args.config if args.config else "../config/config_0.yaml"
-    Simulations().simulation_0(config_path = config_path)
+    simulation = args.simulation if args.simulation is not None else 0
+
+    method = getattr(Simulations(), f"simulation_{simulation}", None)
+    assert method is not None, f"Simulation {simulation} not found. Please choose a valid simulation number."
+    method(config_path=config_path)
