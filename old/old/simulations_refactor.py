@@ -5,8 +5,7 @@
 """
 The aim of this file is to provide the main simulation methods used in the thesis and in the jupyter file `simulations.ipynb`.
 """
-from code.core.utils import *
-from code.core.old.models import *
+from old.old.models import *
 from plotly.subplots import make_subplots
 
 class Simulations:

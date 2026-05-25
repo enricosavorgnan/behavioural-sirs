@@ -8,9 +8,16 @@ Class method building utilities for simulating Behavioral SIRS models
 
 import numpy as np
 import yaml
-from code.core.utils import expr
+
 from scipy.integrate import solve_ivp
 from scipy.optimize import fsolve, least_squares
+
+# Julia is required:
+import os
+import juliapkg
+julia_bin = os.path.dirname(juliapkg.executable())
+os.environ["PATH"] = julia_bin + os.pathsep + os.environ.get("PATH", "")
+from diffeqpy import de
 
 from code.core.sirs_models import SIRSModels
 
@@ -57,6 +64,8 @@ class SIRS:
 
         self.model = getattr(self._physics, self.model_type)
 
+        print(self.method)
+
 
     def _set_params_with_dict(self, model_params: dict):
         self.model_type : str = model_params.get('model_type', 'sirs')
@@ -76,6 +85,7 @@ class SIRS:
         self.delta : float = model_params.get('delta', 0)
         self.omega : float = model_params.get('omega', 2 * np.pi / 365)
         self.T : int = int(model_params.get('T', 14))
+        self.method : str = str(model_params.get('method', 'RK45'))
 
         # set values to float
         for k, v in vars(self).items():
@@ -107,6 +117,7 @@ class SIRS:
         self.delta : float = config.get('delta', 0)
         self.omega : float = config.get('omega', 2 * np.pi / 365)
         self.T : int = int(config.get('T', 14))
+        self.method : str = str(config.get('method', 'RK45'))
 
         # set values to float
         for k, v in vars(self).items():
@@ -127,21 +138,26 @@ class SIRS:
 
     def _solve_odes(self,
                     t : list | np.ndarray,
-                    t_span : list[float | int],
                     i : float,
                     r : float,
                     m1 : float | None = None,
                     m2 : float | None = None,
                     m3 : float | None = None,
-                    method : str | None = 'RK45'):
+                    t_span : list[float | int] = [0, 100],
+                    n_points : int | None = None,
+                    method : str | None = 'RK45',
+                    ):
         """
             Internal method to solve the ODEs based on the model type and parameters.
 
             Parameters:
+            ----------
             - t: array
                 Time points at which to evaluate the solution.
             - t_span: list
                 List of two elements [t_start, t_end] defining the time span for the simulation.
+            - n_points: int
+                Number of points of evaluations
             - i: float
                 Initial condition for the infected population.
             - r: float
@@ -152,8 +168,65 @@ class SIRS:
                 Initial condition for the second memory layer (if applicable).
         """
         variables = [i, r] + ( [m1] if m1 is not None else [] ) + ( [m2] if m2 is not None else [] ) + ( [m3] if m3 is not None else [] )
-        solution = solve_ivp(self.model, t_span, variables, dense_output=True, method=method)
+
+        if method in ['RK45']:
+            solution = solve_ivp(self.model, t_span, variables, dense_output=True, method=method)
+        else:
+            assert n_points is not None, f"n_points must be provided when using method {method}"
+            assert method in ['KenCarp4', 'Tsit5'], f"Method {method} not recognized. Allowed  methods are\n- Tsit5\n- KenCarp4"
+            solution = self.solve_stiff_ode(t_span = t_span, n_points=n_points, variables=variables, method=method)
         return solution
+
+
+    def solve_stiff_ode(self,
+                        t_span : list[float | int],
+                        n_points : int,
+                        variables : list[str | int | float],
+                        method : str ):
+        """
+            Solves the ODE system using Julia's DifferentialEquations.jl via diffeqpy.
+            Returns an object structured identically to scipy.integrate.solve_ivp output.
+
+            Parameters
+            ----------
+            - t_span : list
+                List of two elements [t_start, t_end] defining the time span for the simulation.
+            - n_points : int
+                Number of evaluations
+            - variables : list
+                Variables used in the simulations
+            - method : str
+                Method for solving the ODE.
+                Allowed methods:
+                - KenCarp4 (Kennedy-Carpenter at 4 Order, L-stable, ideal for multi-timescale memory a3 << a1).
+                - Tsit5 (Tsitouras at 5 order, highly efficient for non-stiff regimes).
+        """
+        assert method in ['KenCarp4', 'Tsit5'], f"Method {method} not recognized. Allowed  methods are\n- Tsit5\n- KenCarp4"
+
+        # Define helper functions
+        class JuliaOdeSolution:
+            pass
+        def julia_wrapper(t, y):
+            return self.model(t, np.array(y))
+
+        # Ensure Julia backend is started
+        de.setup()
+
+        v0 = np.array(variables, dtype=np.float64)
+        t_span = (float(t_span[0]), float(t_span[1]))
+        saveat = (t_span[1]-t_span[0])/n_points
+
+        problem = de.ODEProblem(julia_wrapper, v0, t_span)
+        jl_method = de.KenCarp4() if method == 'KenCarp4' else de.Tsit5()
+
+        solution = de.solve(problem, jl_method, saveat = saveat)
+
+        res = JuliaOdeSolution()
+        res.t = np.array(solution.t)
+
+        res.y = np.array(solution.u).T
+
+        return res
 
 
     def cumulative_incidence(self, solution, t_span : list [float | int]):
@@ -194,33 +267,6 @@ class SIRS:
 
         return cumulative_incidence
 
-
-    # def find_equilibrium(self, initial_guess: list, t: float = 0.) -> np.ndarray:
-    #     """
-    #     Finds the exact mathematical equilibrium of the system using scipy.optimize.fsolve.
-    #
-    #     Parameters
-    #     ----------
-    #     initial_guess : list
-    #         A rough guess for the equilibrium state.
-    #         For best results, use the theoretical endemic equilibrium of the
-    #         standard SIR model as the base guess.
-    #     t : float, optional
-    #         The time at which to evaluate the model for finding the equilibrium.
-    #         If None, the model will be evaluated at t=0.
-    #     Returns
-    #     -------
-    #     np.ndarray
-    #         The exact steady-state state variables [I*, R*, M1*, ...].
-    #     """
-    #     ode_func = lambda x: self.model(t, x)
-    #
-    #     equilibrium, info, ier, mesg = fsolve(ode_func, initial_guess, full_output=True)
-    #
-    #     if ier != 1:
-    #         print(f"Warning: fsolve did not converge. Reason: {mesg}")
-    #
-    #     return equilibrium
 
     def find_equilibrium(self, initial_guess: list) -> np.ndarray:
         """
@@ -282,7 +328,7 @@ class SIRS:
         m2 = initial_conditions[3] if len(initial_conditions) >= 4 else None
         m3 = initial_conditions[4] if len(initial_conditions) == 5 else None
 
-        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2, m3=m3)
+        solution = self._solve_odes(t=t, t_span=t_span, i=i, r=r, m1=m1, m2=m2, m3=m3, method=self.method)
         return solution.sol(t)
 
 

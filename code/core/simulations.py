@@ -85,7 +85,7 @@ class Simulations:
 
     def _retrieve_img_path(self, config_path : str, n_simulation : int | str, sim_17_idx : list[str] | None = None, **kwargs) -> str:
         """
-        Retrieve Image Path given the configuration file and the number of simulation
+        Retrieve Image Path given the configuration file and the simulation's number
         """
         config = self._load_yaml(config_path)
 
@@ -115,7 +115,7 @@ class Simulations:
 
     def _retrieve_list_img_path(self, config_path : str, n_simulation : int | str, n_imgs : int, curr_i : int):
         """
-        Retrieve the image path if the image is member of a list of images
+        Retrieve the image path if the image is a member of a list of images
         """
         img_path = self._retrieve_img_path(config_path=config_path, n_simulation=n_simulation)
         img_path_chunks = img_path.rsplit('/', 3)
@@ -144,6 +144,11 @@ class Simulations:
         S = 1. - solution[0] - solution[1]
         solution = np.vstack((S, solution))
         solution = solution[:3]
+
+
+        print(solution[2][0:200])
+        # save on txt file
+
 
         params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='00')}
         fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
@@ -311,7 +316,7 @@ class Simulations:
     def simulation_5(self, config_path : str) -> plt.Figure | None:
         """
         Simulation 5: different model types, different R0, theta combinations
-        It is like Simulation 1, but with additional focus on differnt models.
+        It is like Simulation 1, but with additional focus on different models.
         """
         config = self._load_yaml(config_path)
 
@@ -485,7 +490,7 @@ class Simulations:
 
     def simulation_9(self, config_path : str) -> plt.Figure | None:
         """
-        Simulation 9: different alphas, plot Ie
+        Simulation 9: different alphas, plot I_e
         """
         config = self._load_yaml(config_path)
 
@@ -750,7 +755,7 @@ class Simulations:
 
     def simulation_16(self, config_path : str) -> plt.Figure | None:
         """
-        Simulation 16: Routh-Hurwitz stability for 4th order polynomial. Plot as a function of a1 and a2 together.
+        Simulation 16: Routh-Hurwitz stability for 2nd order polynomial. Plot as a function of a1 and a2 together.
         """
         config = self._load_yaml(config_path=config_path)
 
@@ -991,4 +996,4 @@ class Simulations:
 
 
 if __name__ == '__main__':
-    Simulations().simulation_17(config_path ='../config/config_17.yaml')
+    Simulations().simulation_0(config_path ='../config/config_0.yaml')

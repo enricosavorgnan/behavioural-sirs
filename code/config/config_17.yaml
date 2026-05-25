@@ -10,9 +10,9 @@ simulation_name : "Simulation 17: RH5 - plot a1, a2, a3"
 model_type: 'sirs_three_layer_incidence_one_memory'
 
 r0 : 2.
-theta : !expr 1/365
+theta : !expr 1/15
 mu : !expr 1/365/80
-gamma : !expr 1/14
+gamma : !expr 1/7
 a1 : !expr 1/15
 a2 : !expr 1/90
 a3 : !expr 1/10/365
@@ -29,7 +29,7 @@ t_span : [0, 10000]
 initial_conditions : [0.001, 0., 0., 0., 0. ]
 
 target_span : [0, 0.1]
-target_n_points : 30
+target_n_points : 10
 
 
 # Plotting parameters

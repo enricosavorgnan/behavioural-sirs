@@ -17,16 +17,24 @@ a1 : !expr 1/15
 a2 : !expr 1/90
 k1 : 1.
 k2 : 1.
-alpha1 : 500.
-alpha2 : 500.
+alpha1 : 100.
+alpha2 : 100.
 
 delta : 0.
 omega : 0.
-T : 500
+T : 5
 
-t_span : [0, 800001]
-n_points : 800000
+
+# Simulation parameters
+
+t_span : [0, 800000]
+n_points : 799999
 initial_conditions : [0.001, 0., 0.]
+
+method : 'RK45'
+
+
+
 
 
 
@@ -37,4 +45,5 @@ show_params : False
 show_title : False
 
 plot_together : True
-plot_t_span : [0, 800000]
+plot_t_span : [0, 799999]
+plot_n_points : 799999

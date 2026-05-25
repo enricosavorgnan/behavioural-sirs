@@ -75,7 +75,7 @@ class SIRSModels:
         assert isinstance(self.k3, (int, float)), "K2 provided should be set for SIRS model."
         assert isinstance(self.alpha1, (int, float)), "Alpha1 provided should be set for SIRS model."
         assert isinstance(self.alpha2, (int, float)), "Alpha2 provided should be set for SIRS model."
-        assert isinstance(self.alpha3, (int, float)), "Alpha2 provided should be set for SIRS model."
+        assert isinstance(self.alpha3, (int, float)), "Alpha3 provided should be set for SIRS model."
         assert isinstance(self.delta, (int, float)), "Delta provided should be set for SIRS model."
         assert isinstance(self.omega, (int, float)), "Omega provided should be set for SIRS model."
 
