@@ -334,7 +334,69 @@ class SIRSModels:
         return [dI, dR, dM1, dM2, dM3]
 
 
-    def sirs_delay(self, t, X):
+    def sirs_delay(self, dX, X, history, p, t):
+        """
+        Follows a Julia DifferentialEquation scheme.
+        This because the solver is Tsitouras 5 included in the Julia package DelayDiffEq.
+        The old version, never used, is in sirs_delay_old.
+        """
+        t = float(t)
+        X_now  = np.array(X, dtype=np.float64)
+        t_past = max(t - self.T, 0)
+        X_past = np.array(history(p, t_past), dtype=np.float64)
+
+        I,  R,  M  = X_now[0],  X_now[1],  X_now[2]
+        Ip, Rp, Mp = X_past[0], X_past[1], X_past[2]
+
+        beta_now  = self.beta(t, M)
+        beta_past = self.beta(t - self.T, Mp)
+
+        inc_now   = beta_now * I * (1.0 - R - I)
+        inc_past  = beta_past * Ip * (1.0 - Rp - Ip)
+
+        dI = inc_now - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM = (I-Ip) / self.T
+
+        dX[0] = dI
+        dX[1] = dR
+        dX[2] = dM
+
+
+    def sirs_delay_incidence(self, dX, X, history, p, t):
+        """
+        Follows a Julia DifferentialEquation scheme.
+        This because the solver is Tsitouras 5 included in the Julia package DelayDiffEq.
+        The old version, never used, is in sirs_delay_incidence_old.
+        """
+        t = float(t)
+        X_now  = np.array(X, dtype=np.float64)
+        t_past = max(t - self.T, 0)
+        X_past = np.array(history(p, t_past), dtype=np.float64)
+
+        I,  R,  M  = X_now[0],  X_now[1],  X_now[2]
+        Ip, Rp, Mp = X_past[0], X_past[1], X_past[2]
+
+        beta_now  = self.beta(t, M)
+        beta_past = self.beta(t - self.T, Mp)
+
+        inc_now   = beta_now * I * (1.0 - R - I)
+        inc_past  = beta_past * Ip * (1.0 - Rp - Ip)
+
+        dI = inc_now - I * (self.mu + self.gamma)
+        dR = self.gamma * I - (self.mu + self.theta) * R
+        dM = (inc_now - inc_past) / self.T
+
+        dX[0] = dI
+        dX[1] = dR
+        dX[2] = dM
+
+
+    def sirs_delay_old(self, t, X):
+        """
+        OLD VERSION!
+        Please use sirs_delay()
+        """
         I, R, M = X
 
         self.Is.append(I)
@@ -352,7 +414,11 @@ class SIRSModels:
         return [dI, dR, dM]
 
 
-    def sirs_delay_incidence(self, t, X):
+    def sirs_delay_incidence_old(self, t, X):
+        """
+        OLD VERSION!
+        Please use sirs_delay_incidence()
+        """
         I, R, M = X
 
         beta_value = self.beta(t, M)

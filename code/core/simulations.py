@@ -100,7 +100,7 @@ class Simulations:
         a1 = round(config.get('a1', 1/30), 3) if type(config.get('a1', 1/30)) == float else [round(a1, 3) for a1 in config.get('a1', 1/30)]
         a2 = round(config.get('a2', 1/90), 3) if type(config.get('a2', 1/90)) == float else [round(a2, 3) for a2 in config.get('a2', 1/90)]
 
-        img_folder = f'../img/simulation_{n_simulation}/'
+        img_folder = config.get("plot_path", f'../img/simulation_{n_simulation}/')
         img_path = f'model_{str_model_type}_r0_{r0}_theta_{theta}_k_{k}_a1_{a1}_a2_{a2}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
 
         if n_simulation == '17' and kwargs.get('plot_type', '3D') == 'Combo':
@@ -108,9 +108,8 @@ class Simulations:
         if model_type in ['sirs_delay', 'sirs_delay_incidence']:
             T = int(config.get('T', 14) )
             img_path = f'model_{str_model_type}_r0_{r0}_theta_{theta}_T_{T}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
-
-
-        return img_folder + img_path
+        path = img_folder + img_path
+        return path
 
 
 
@@ -137,7 +136,6 @@ class Simulations:
         n_points = config.get('n_points', 20000)
         plot_t_span = config.get('plot_t_span', t_span)
         plot_n_points = config.get('plot_n_points', (n_points * (plot_t_span[1]-plot_t_span[0])) // (t_span[1]-t_span[0]) + 1)
-        print(plot_n_points, config.get('plot_n_points', 20000))
 
         model = SIRS(config_path=config_path)
         solution = model.simulate(t_span=t_span,
@@ -146,7 +144,6 @@ class Simulations:
         S = 1. - solution[0] - solution[1]
         solution = np.vstack((S, solution))
         solution = solution[:3]
-        print(len(solution[0]))
 
         params = {'image_path': self._retrieve_img_path(config_path=config_path, n_simulation='00')}
         fig = Plots(show_cumulative_incidence = config.get('show_cumulative_incidence', False),
@@ -156,6 +153,7 @@ class Simulations:
                                                          t_span=plot_t_span,
                                                          n_points=plot_n_points, **params)
         fig.show()
+
         return fig
 
 

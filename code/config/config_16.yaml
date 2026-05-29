@@ -27,9 +27,13 @@ initial_conditions : [0.001, 0., 0., 0.]
 target_span : [0, !expr 5]
 target_n_points : 10
 
+
+
 # Plotting parameters
 
 show_cumulative_incidence : False
 show_params : False
 show_title : False
 show_legend : True
+
+plot_path : "./code/img/simulation_16/"

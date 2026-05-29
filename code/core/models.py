@@ -61,8 +61,6 @@ class SIRS:
 
         self.model = getattr(self._physics, self.model_type)
 
-        print(f"Method: {self.method}")
-
 
     def _set_params_with_dict(self, model_params: dict):
         self.model_type : str = model_params.get('model_type', 'sirs')
@@ -173,7 +171,6 @@ class SIRS:
             assert n_points is not None, f"n_points must be provided when using method {method}"
             assert method in ['KenCarp4', 'Tsit5'], f"Method {method} not recognized. Allowed  methods are\n- Tsit5\n- KenCarp4"
             solution = self.solve_stiff_ode(t_span = t_span, n_points=n_points, variables=variables, method=method)
-            print(type(solution), solution.shape)
             solution = np.array(solution)
             return solution
 
@@ -262,7 +259,7 @@ class SIRS:
         t_span : list
             [t_start, t_end]
         n_points : int
-            Number of save-points
+            Number of save -points
         variables : list
             Initial conditions
         method : str
@@ -271,82 +268,30 @@ class SIRS:
         assert method in ['KenCarp4', 'Tsit5'], (
             f"Method {method} not recognised. Allowed: 'Tsit5', 'KenCarp4'"
         )
+        # History: for t < t0 the state is constant = initial condition
+        def history_fn(p, t):
+            return jl.Vector(v0.copy())
+
 
         jl.seval("using OrdinaryDiffEq, DelayDiffEq, DifferentialEquations")
+        jl_method = (jl.OrdinaryDiffEq.Rodas5P()
+                     if method == 'KenCarp4'
+                     else jl.DifferentialEquations.Tsit5())
 
         v0       = np.array(variables, dtype=np.float64)
         jl_v0    = jl.Vector(v0)
         t_span_f = (float(t_span[0]), float(t_span[1]))
         saveat   = (t_span_f[1] - t_span_f[0]) / n_points
 
-        jl_method = (jl.OrdinaryDiffEq.Rodas5P()
-                     if method == 'KenCarp4'
-                     else jl.DifferentialEquations.Tsit5())
+        DDE = self.model
+        problem  = de.DDEProblem(DDE, jl_v0, history_fn, t_span_f)
+        solution = de.solve(problem,
+                            jl.MethodOfSteps(jl_method),
+                            saveat=saveat)
 
-        # ------------------------------------------------------------------ #
-        #  DDE branch  (sirs_delay, sirs_delay_incidence)                     #
-        # ------------------------------------------------------------------ #
-        if self.model_type in ['sirs_delay', 'sirs_delay_incidence']:
-            T_delay  = float(self._physics.T)   # continuous delay length
-            physics  = self._physics            # capture for closure
-
-            # History: for t < t0 the state is constant = initial condition
-            def history_fn(p, t):
-                return jl.Vector(v0.copy())
-
-            # DDE right-hand side — uses Julia's h(p, t-T) for past values
-            def DDE(du, u, h, p, t):
-                t_f    = float(t)
-                u_now  = np.array(u, dtype=np.float64)
-                t_past = max(t_f - T_delay, t_span_f[0])
-                u_past = np.array(h(p, t_past), dtype=np.float64)
-
-                I,  R,  M  = u_now[0],  u_now[1],  u_now[2]
-                Ip, Rp, Mp = u_past[0], u_past[1], u_past[2]
-
-                beta_now  = physics.beta(t_f, M)
-                inc_now   = beta_now * I * (1.0 - R - I)
-
-                if self.model_type == 'sirs_delay_incidence':
-                    # dM = ( incidence(t) - incidence(t-T) ) / T
-                    beta_past = physics.beta(t_f - T_delay, Mp)
-                    inc_past  = beta_past * Ip * (1.0 - Rp - Ip)
-                    dM = (inc_now - inc_past) / T_delay
-                else:
-                    # sirs_delay: dM = ( I(t) - I(t-T) ) / T
-                    dM = (I - Ip) / T_delay
-
-                dI = inc_now - I * (physics.mu + physics.gamma)
-                dR = physics.gamma * I - (physics.mu + physics.theta) * R
-
-                du[0] = dI
-                du[1] = dR
-                du[2] = dM
-
-            problem  = de.DDEProblem(DDE, jl_v0, history_fn, t_span_f)
-            solution = de.solve(problem,
-                                jl.MethodOfSteps(jl_method),
-                                saveat=saveat)
-
-        # ------------------------------------------------------------------ #
-        #  ODE branch  (all other models)                                     #
-        # ------------------------------------------------------------------ #
-        else:
-            def ODE(du, u, p, t):
-                u_py       = np.array(u, dtype=np.float64)
-                derivative = self.model(float(t), u_py)
-                for i, d in enumerate(derivative):
-                    du[i] = float(d)
-
-            problem  = de.ODEProblem(ODE, jl_v0, t_span_f)   # was: jl.v0 (bug)
-            solution = de.solve(problem, jl_method, saveat=saveat)
-
-        # ------------------------------------------------------------------ #
-        #  Unpack Julia solution → NumPy array (n_vars × n_points)            #
-        # ------------------------------------------------------------------ #
-        res_y = np.stack([np.array(step, dtype=np.float64)
+        result = np.stack([np.array(step, dtype=np.float64)
                           for step in solution.u], axis=1)
-        return res_y
+        return result
 
 
     def cumulative_incidence(self, solution, t_span : list [float | int]):
