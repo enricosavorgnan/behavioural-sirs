@@ -17,7 +17,7 @@ from code.core.maths import RH_FifthOrder, RH_ForthOrder, RH_ThirdOrder
 from code.core.maths import EigenStability, DelayStability
 
 from code.core.plots import Plots
-from code.core.utils import expr
+from code.core.utils import expr, save_simulation
 
 
 
@@ -113,6 +113,35 @@ class Simulations:
 
 
 
+    def _retrieve_simulation_path(self, config_path : str, n_simulation : int | str, sim_17_idx : list[str] | None = None, **kwargs) -> str:
+        """
+        Retrieve Image Path given the configuration file and the simulation's number
+        """
+        config = self._load_yaml(config_path)
+
+        model_type = config.get('model_type', 'sirs')
+        str_model_type = self._retrieve_model_string(model_type)
+
+        r0 = config.get('r0', 2.5)
+        theta = round(config.get('theta', 1/365), 3) if type(config.get('theta', 1/365)) == float else [round(theta, 3) for theta in config.get('theta', 1/365)]
+        alpha = round(config.get('alpha1', 50.), 3) if type(config.get('alpha1', 50.)) == float else [round(alpha, 3) for alpha in config.get('alpha1', 50.)]
+        k = round(config.get('k1', 1), 3) if type(config.get('k1', 1)) == float else [round(k, 3) for k in config.get('k1', 1)]
+        a1 = round(config.get('a1', 1/30), 3) if type(config.get('a1', 1/30)) == float else [round(a1, 3) for a1 in config.get('a1', 1/30)]
+        a2 = round(config.get('a2', 1/90), 3) if type(config.get('a2', 1/90)) == float else [round(a2, 3) for a2 in config.get('a2', 1/90)]
+
+        sim_folder = config.get("simulation_path", f'../simulations/simulation_{n_simulation}/')
+        sim_path = f'model_{str_model_type}_r0_{r0}_theta_{theta}_k_{k}_a1_{a1}_a2_{a2}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+
+        if n_simulation == '17' and kwargs.get('plot_type', '3D') == 'Combo':
+            sim_path = f'combo_{sim_17_idx[0]}_{sim_17_idx[1]}_model_{model_type}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        if model_type in ['sirs_delay', 'sirs_delay_incidence']:
+            T = int(config.get('T', 14) )
+            sim_path = f'model_{str_model_type}_r0_{r0}_theta_{theta}_T_{T}_alpha_{alpha}_time_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        path = sim_folder + sim_path
+        return path
+
+
+
     def _retrieve_list_img_path(self, config_path : str, n_simulation : int | str, n_imgs : int, curr_i : int):
         """
         Retrieve the image path if the image is a member of a list of images
@@ -154,6 +183,12 @@ class Simulations:
                                                          n_points=plot_n_points, **params)
         fig.show()
 
+
+        if config.get('save_simulation', False):
+            print("caccaculo")
+            simulation_path = self._retrieve_simulation_path(config_path=config_path, n_simulation='00')
+            print("sim:", simulation_path)
+            save_simulation(simulation=solution, file_path=simulation_path)
         return fig
 
 
